@@ -18,7 +18,7 @@ package org.openrewrite.gradle.toolingapi;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ProjectConnection;
-import org.gradle.tooling.model.GradleProject;
+import org.openrewrite.gradle.marker.GradleProject;
 
 import java.io.File;
 import java.io.IOException;

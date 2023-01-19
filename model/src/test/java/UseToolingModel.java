@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,17 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-initscript {
-    repositories {
-        mavenLocal()
-        mavenCentral()
-    }
+import org.openrewrite.gradle.toolingapi.OpenRewriteModel;
 
-    dependencies {
-        classpath 'org.openrewrite.gradle.tooling:plugin:latest.release'
-    }
-}
+import java.io.File;
 
-allprojects {
-    apply plugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
+public class UseToolingModel {
+    public static void main(String[] args) {
+        OpenRewriteModel model = OpenRewriteModel.forProjectDirectory(new File("sample"));
+        System.out.println(model.gradleProject().getMavenRepositories());
+    }
 }
