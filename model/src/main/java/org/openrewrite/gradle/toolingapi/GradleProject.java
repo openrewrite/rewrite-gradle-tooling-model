@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.openrewrite.gradle.toolingapi.OpenRewriteModel;
+package org.openrewrite.gradle.toolingapi;
 
-import java.io.File;
+import java.util.List;
 
-public class UseToolingModel {
-    public static void main(String[] args) {
-        OpenRewriteModel model = OpenRewriteModel.forProjectDirectory(new File("sample"));
-        System.out.println(model.gradleProject().getMavenRepositories());
-    }
+public interface GradleProject {
+    String getName();
+
+    String getPath();
+
+    List<GradlePluginDescriptor> getPlugins();
+
+    List<MavenRepository> getMavenRepositories();
+
+    java.util.Map<String, GradleDependencyConfiguration> getNameToConfiguration();
 }

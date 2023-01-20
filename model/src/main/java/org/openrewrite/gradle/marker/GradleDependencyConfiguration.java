@@ -20,11 +20,12 @@ import lombok.With;
 import lombok.experimental.NonFinal;
 import org.openrewrite.internal.lang.Nullable;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Value
 @With
-public class GradleDependencyConfiguration {
+public class GradleDependencyConfiguration implements Serializable {
 
     /**
      * The name of the dependency configuration. Unique within a given project.

@@ -18,8 +18,10 @@ package org.openrewrite.gradle.marker;
 import lombok.Value;
 import org.openrewrite.internal.lang.Nullable;
 
+import java.io.Serializable;
+
 @Value
-public class GradlePluginDescriptor {
+public class GradlePluginDescriptor implements Serializable {
     /**
      * The fully qualified name of the class which implements the plugin.
      */

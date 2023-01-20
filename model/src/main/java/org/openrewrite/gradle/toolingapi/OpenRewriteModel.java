@@ -15,47 +15,7 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import org.gradle.tooling.GradleConnector;
-import org.gradle.tooling.ModelBuilder;
-import org.gradle.tooling.ProjectConnection;
-import org.openrewrite.gradle.marker.GradleProject;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-
 public interface OpenRewriteModel {
 
     GradleProject gradleProject();
-
-    static OpenRewriteModel forProjectDirectory(File projectDir) {
-        GradleConnector connector = GradleConnector.newConnector();
-        connector.forProjectDirectory(projectDir);
-        try (ProjectConnection connection = connector.connect()) {
-            ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
-
-            Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle");
-            try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
-                if(is == null) {
-                    throw new IllegalStateException("Expected to find init.gradle on the classpath");
-                }
-                Files.copy(is, init, StandardCopyOption.REPLACE_EXISTING);
-                customModelBuilder.withArguments("--init-script", "init.gradle");
-                return customModelBuilder.get();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } finally {
-                try {
-                    Files.delete(init);
-                } catch (IOException e) {
-                    //noinspection ThrowFromFinallyBlock
-                    throw new UncheckedIOException(e);
-                }
-            }
-        }
-    }
 }

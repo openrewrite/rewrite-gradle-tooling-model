@@ -15,12 +15,18 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import lombok.Value;
 import org.openrewrite.gradle.marker.GradleProject;
 
 import java.io.Serializable;
 
-@Value
 public class OpenRewriteModelImpl implements Serializable {
-    GradleProject gradleProject;
+    private final GradleProject gradleProject;
+
+    public OpenRewriteModelImpl(GradleProject gradleProject) {
+        this.gradleProject = gradleProject;
+    }
+
+    public GradleProject gradleProject() {
+        return gradleProject;
+    }
 }

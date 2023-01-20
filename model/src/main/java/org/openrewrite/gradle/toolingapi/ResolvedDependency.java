@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-initscript {
-    repositories {
-        mavenLocal()
-        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-        mavenCentral()
-    }
+package org.openrewrite.gradle.toolingapi;
 
-    dependencies {
-        classpath 'org.openrewrite.gradle.tooling:plugin:latest.integration'
-    }
-}
+import org.openrewrite.internal.lang.Nullable;
 
-allprojects {
-    apply plugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
+import java.util.List;
+
+public interface ResolvedDependency {
+    @Nullable
+    MavenRepository getRepository();
+
+    ResolvedGroupArtifactVersion getGav();
+
+    Dependency getRequested();
+
+    /**
+     * Direct dependencies only that survived conflict resolution and exclusion.
+     */
+    List<ResolvedDependency> getDependencies();
+
+    int getDepth();
 }

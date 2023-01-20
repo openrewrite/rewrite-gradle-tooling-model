@@ -31,6 +31,7 @@ import org.openrewrite.maven.tree.GroupArtifactVersion;
 import org.openrewrite.maven.tree.MavenRepository;
 import org.openrewrite.maven.tree.ResolvedGroupArtifactVersion;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
-public final class GradleProjectBuilder {
+public final class GradleProjectBuilder implements Serializable {
 
     private GradleProjectBuilder() {
     }

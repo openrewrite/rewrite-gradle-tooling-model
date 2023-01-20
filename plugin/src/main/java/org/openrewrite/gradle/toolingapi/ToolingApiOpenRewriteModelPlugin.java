@@ -45,7 +45,7 @@ public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
 
         @Override
         public Object buildAll(String modelName, Project project) {
-            return GradleProjectBuilder.gradleProject(project);
+            return new OpenRewriteModelImpl(GradleProjectBuilder.gradleProject(project));
         }
     }
 }

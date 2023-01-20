@@ -25,6 +25,7 @@ import org.openrewrite.marker.Marker;
 import org.openrewrite.maven.tree.Dependency;
 import org.openrewrite.maven.tree.MavenRepository;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ import java.util.UUID;
  */
 @Value
 @With
-public class GradleProject implements Marker {
+public class GradleProject implements Marker, Serializable {
     UUID id;
     String name;
     String path;
