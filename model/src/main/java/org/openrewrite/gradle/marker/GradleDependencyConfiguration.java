@@ -19,9 +19,13 @@ import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
 import org.openrewrite.internal.lang.Nullable;
+import org.openrewrite.maven.tree.*;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyList;
 
 @Value
 @With
@@ -47,10 +51,67 @@ public class GradleDependencyConfiguration implements Serializable {
     @NonFinal
     List<GradleDependencyConfiguration> extendsFrom;
 
-    List<org.openrewrite.maven.tree.Dependency> requested;
-    List<org.openrewrite.maven.tree.ResolvedDependency> resolved;
+    List<Dependency> requested;
+    List<ResolvedDependency> resolved;
+
+    public static GradleDependencyConfiguration fromToolingModel(org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config) {
+        return new GradleDependencyConfiguration(
+                config.getName(),
+                config.getDescription(),
+                false,
+                true,
+                config.getExtendsFrom().stream()
+                        .map(GradleDependencyConfiguration::fromToolingModel)
+                        .collect(Collectors.toList()),
+                config.getRequested().stream().map(GradleDependencyConfiguration::fromToolingModel)
+                        .collect(Collectors.toList()),
+                config.getResolved().stream().map(GradleDependencyConfiguration::fromToolingModel)
+                        .collect(Collectors.toList())
+        );
+    }
 
     void unsafeSetExtendsFrom(List<GradleDependencyConfiguration> extendsFrom) {
         this.extendsFrom = extendsFrom;
+    }
+
+    private static ResolvedDependency fromToolingModel(org.openrewrite.gradle.toolingapi.ResolvedDependency dep) {
+        return new ResolvedDependency(
+                org.openrewrite.gradle.marker.GradleProject.fromToolingModel(dep.getRepository()),
+                fromToolingModel(dep.getGav()),
+                fromToolingModel(dep.getRequested()),
+                dep.getDependencies().stream()
+                        .map(GradleDependencyConfiguration::fromToolingModel)
+                        .collect(Collectors.toList()),
+                emptyList(),
+                null,
+                null,
+                null,
+                dep.getDepth()
+        );
+    }
+
+    private static Dependency fromToolingModel(org.openrewrite.gradle.toolingapi.Dependency dep) {
+        return new Dependency(
+                fromToolingModel(dep.getGav()),
+                dep.getScope(),
+                dep.getType(),
+                dep.getScope(),
+                dep.getExclusions().stream()
+                        .map(GradleDependencyConfiguration::fromToolingModel)
+                        .collect(Collectors.toList()),
+                dep.getOptional()
+        );
+    }
+
+    private static GroupArtifact fromToolingModel(org.openrewrite.gradle.toolingapi.GroupArtifact ga) {
+        return new GroupArtifact(ga.getGroup(), ga.getArtifact());
+    }
+
+    private static GroupArtifactVersion fromToolingModel(org.openrewrite.gradle.toolingapi.GroupArtifactVersion gav) {
+        return new GroupArtifactVersion(gav.getGroup(), gav.getArtifact(), gav.getVersion());
+    }
+
+    private static ResolvedGroupArtifactVersion fromToolingModel(org.openrewrite.gradle.toolingapi.ResolvedGroupArtifactVersion gav) {
+        return new ResolvedGroupArtifactVersion(null, gav.getGroup(), gav.getArtifact(), gav.getVersion(), gav.getDatedSnapshotVersion());
     }
 }

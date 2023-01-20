@@ -33,4 +33,8 @@ public class GradlePluginDescriptor implements Serializable {
      */
     @Nullable
     String id;
+
+    public static GradlePluginDescriptor fromToolingModel(org.openrewrite.gradle.toolingapi.GradlePluginDescriptor desc) {
+        return new GradlePluginDescriptor(desc.getFullyQualifiedClassName(), desc.getId());
+    }
 }

@@ -16,6 +16,7 @@
 package org.openrewrite.gradle.toolingapi;
 
 import java.util.List;
+import java.util.Map;
 
 public interface GradleProject {
     String getName();
@@ -26,5 +27,5 @@ public interface GradleProject {
 
     List<MavenRepository> getMavenRepositories();
 
-    java.util.Map<String, GradleDependencyConfiguration> getNameToConfiguration();
+    Map<String, GradleDependencyConfiguration> getNameToConfiguration();
 }

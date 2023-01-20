@@ -16,8 +16,6 @@
 package org.openrewrite.gradle.toolingapi;
 
 import org.openrewrite.internal.lang.Nullable;
-import org.openrewrite.maven.tree.GroupArtifact;
-import org.openrewrite.maven.tree.GroupArtifactVersion;
 
 import java.util.List;
 

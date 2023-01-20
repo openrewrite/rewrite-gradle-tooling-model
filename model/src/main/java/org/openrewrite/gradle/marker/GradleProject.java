@@ -17,8 +17,6 @@ package org.openrewrite.gradle.marker;
 
 import lombok.Value;
 import lombok.With;
-import org.openrewrite.gradle.marker.GradleDependencyConfiguration;
-import org.openrewrite.gradle.marker.GradlePluginDescriptor;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.marker.Marker;
@@ -30,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 /**
@@ -45,9 +44,9 @@ public class GradleProject implements Marker, Serializable {
     String path;
     List<GradlePluginDescriptor> plugins;
     List<MavenRepository> mavenRepositories;
-    Map<String, org.openrewrite.gradle.marker.GradleDependencyConfiguration> nameToConfiguration;
+    Map<String, GradleDependencyConfiguration> nameToConfiguration;
 
-    public org.openrewrite.gradle.marker.GradleDependencyConfiguration getConfiguration(String name) {
+    public GradleDependencyConfiguration getConfiguration(String name) {
         return nameToConfiguration.get(name);
     }
 
@@ -59,8 +58,41 @@ public class GradleProject implements Marker, Serializable {
     public Dependency findDependency(String configuration, String groupId, String artifactId) {
         return nameToConfiguration.get(configuration).getRequested().stream()
                 .filter(d -> StringUtils.matchesGlob(d.getGav().getGroupId(), groupId) &&
-                        StringUtils.matchesGlob(d.getGav().getArtifactId(), artifactId))
+                             StringUtils.matchesGlob(d.getGav().getArtifactId(), artifactId))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public static GradleProject fromToolingModel(org.openrewrite.gradle.toolingapi.GradleProject project) {
+        return new GradleProject(
+                UUID.randomUUID(),
+                project.getName(),
+                project.getPath(),
+                project.getPlugins().stream()
+                        .map(GradlePluginDescriptor::fromToolingModel)
+                        .collect(Collectors.toList()),
+                project.getMavenRepositories().stream()
+                        .map(GradleProject::fromToolingModel)
+                        .collect(Collectors.toList()),
+                project.getNameToConfiguration().entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> GradleDependencyConfiguration.fromToolingModel(e.getValue())))
+        );
+    }
+
+    @Nullable
+    static MavenRepository fromToolingModel(@Nullable org.openrewrite.gradle.toolingapi.MavenRepository mavenRepository) {
+        if (mavenRepository == null) {
+            return null;
+        }
+        return new MavenRepository(
+                mavenRepository.getId(),
+                mavenRepository.getUri(),
+                mavenRepository.getReleases(),
+                mavenRepository.getSnapshots(),
+                mavenRepository.getKnownToExist(),
+                mavenRepository.getUsername(),
+                mavenRepository.getPassword(),
+                mavenRepository.getDeriveMetadataIfMissing()
+        );
     }
 }
