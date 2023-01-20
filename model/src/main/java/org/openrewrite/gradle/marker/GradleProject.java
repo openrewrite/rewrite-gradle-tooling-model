@@ -89,7 +89,7 @@ public class GradleProject implements Marker, Serializable {
                 mavenRepository.getUri(),
                 mavenRepository.getReleases(),
                 mavenRepository.getSnapshots(),
-                mavenRepository.getKnownToExist(),
+                mavenRepository.isKnownToExist(),
                 mavenRepository.getUsername(),
                 mavenRepository.getPassword(),
                 mavenRepository.getDeriveMetadataIfMissing()

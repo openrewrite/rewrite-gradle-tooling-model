@@ -35,7 +35,7 @@ public interface MavenRepository {
     @Nullable
     String getSnapshots();
 
-    boolean getKnownToExist();
+    boolean isKnownToExist();
 
     @Nullable
     String getUsername();
