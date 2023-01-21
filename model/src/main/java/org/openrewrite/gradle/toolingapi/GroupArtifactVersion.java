@@ -19,9 +19,9 @@ import org.openrewrite.internal.lang.Nullable;
 
 public interface GroupArtifactVersion {
     @Nullable
-    String getGroup();
+    String getGroupId();
 
-    String getArtifact();
+    String getArtifactId();
 
     @Nullable
     String getVersion();

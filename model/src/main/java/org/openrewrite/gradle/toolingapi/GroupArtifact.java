@@ -16,7 +16,7 @@
 package org.openrewrite.gradle.toolingapi;
 
 public interface GroupArtifact {
-    String getGroup();
+    String getGroupId();
 
-    String getArtifact();
+    String getArtifactId();
 }

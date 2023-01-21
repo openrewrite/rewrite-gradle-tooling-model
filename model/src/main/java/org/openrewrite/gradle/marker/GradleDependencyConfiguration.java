@@ -104,11 +104,11 @@ public class GradleDependencyConfiguration implements Serializable {
     }
 
     private static GroupArtifact fromToolingModel(org.openrewrite.gradle.toolingapi.GroupArtifact ga) {
-        return new GroupArtifact(ga.getGroup(), ga.getArtifact());
+        return new GroupArtifact(ga.getGroupId(), ga.getArtifactId());
     }
 
     private static GroupArtifactVersion fromToolingModel(org.openrewrite.gradle.toolingapi.GroupArtifactVersion gav) {
-        return new GroupArtifactVersion(gav.getGroup(), gav.getArtifact(), gav.getVersion());
+        return new GroupArtifactVersion(gav.getGroupId(), gav.getArtifactId(), gav.getVersion());
     }
 
     private static ResolvedGroupArtifactVersion fromToolingModel(org.openrewrite.gradle.toolingapi.ResolvedGroupArtifactVersion gav) {
