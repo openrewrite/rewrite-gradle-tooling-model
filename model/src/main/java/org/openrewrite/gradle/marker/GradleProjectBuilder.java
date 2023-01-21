@@ -169,10 +169,12 @@ public final class GradleProjectBuilder {
                 continue;
             }
             GradleDependencyConfiguration dc = results.get(conf.getName());
-            List<GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
-                    .map(it -> results.get(it.getName()))
-                    .collect(Collectors.toList());
-            dc.unsafeSetExtendsFrom(extendsFrom);
+            if (dc != null) {
+                List<GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
+                        .map(it -> results.get(it.getName()))
+                        .collect(Collectors.toList());
+                dc.unsafeSetExtendsFrom(extendsFrom);
+            }
         }
         return results;
     }
