@@ -18,9 +18,9 @@ package org.openrewrite.gradle.toolingapi;
 import org.openrewrite.internal.lang.Nullable;
 
 public interface ResolvedGroupArtifactVersion {
-    String getGroup();
+    String getGroupId();
 
-    String getArtifact();
+    String getArtifactId();
 
     String getVersion();
 

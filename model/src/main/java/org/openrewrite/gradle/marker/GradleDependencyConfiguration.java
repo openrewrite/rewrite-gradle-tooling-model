@@ -112,6 +112,6 @@ public class GradleDependencyConfiguration implements Serializable {
     }
 
     private static ResolvedGroupArtifactVersion fromToolingModel(org.openrewrite.gradle.toolingapi.ResolvedGroupArtifactVersion gav) {
-        return new ResolvedGroupArtifactVersion(null, gav.getGroup(), gav.getArtifact(), gav.getVersion(), gav.getDatedSnapshotVersion());
+        return new ResolvedGroupArtifactVersion(null, gav.getGroupId(), gav.getArtifactId(), gav.getVersion(), gav.getDatedSnapshotVersion());
     }
 }
