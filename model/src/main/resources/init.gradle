@@ -22,6 +22,7 @@ initscript {
 
     dependencies {
         classpath 'org.openrewrite.gradle.tooling:plugin:latest.integration'
+        classpath 'org.openrewrite:rewrite-maven:latest.integration'
     }
 }
 
