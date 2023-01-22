@@ -18,6 +18,7 @@ package org.openrewrite.gradle.toolingapi;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ProjectConnection;
+import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,11 +30,9 @@ import java.nio.file.StandardCopyOption;
 
 public class OpenRewriteModelBuilder {
     public static OpenRewriteModel forProjectDirectory(File projectDir) {
-        GradleConnector connector = GradleConnector.newConnector();
-        connector.forProjectDirectory(projectDir);
+        GradleConnector connector = GradleConnector.newConnector().forProjectDirectory(projectDir);
         try (ProjectConnection connection = connector.connect()) {
             ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
-
             Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle");
             try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
                 if(is == null) {
