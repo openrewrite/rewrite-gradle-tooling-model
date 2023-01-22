@@ -30,12 +30,19 @@ import java.nio.file.StandardCopyOption;
 
 public class OpenRewriteModelBuilder {
     public static OpenRewriteModel forProjectDirectory(File projectDir) {
-        GradleConnector connector = GradleConnector.newConnector().forProjectDirectory(projectDir);
+        DefaultGradleConnector connector = (DefaultGradleConnector) GradleConnector.newConnector();
+//        connector.useBuildDistribution()
+        if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
+            connector.useBuildDistribution();
+        } else {
+            connector.useGradleVersion("7.4.2");
+        }
+        connector.forProjectDirectory(projectDir);
         try (ProjectConnection connection = connector.connect()) {
             ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
             Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle");
             try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
-                if(is == null) {
+                if (is == null) {
                     throw new IllegalStateException("Expected to find init.gradle on the classpath");
                 }
                 Files.copy(is, init, StandardCopyOption.REPLACE_EXISTING);
