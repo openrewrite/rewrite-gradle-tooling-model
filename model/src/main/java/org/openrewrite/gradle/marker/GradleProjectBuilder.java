@@ -170,11 +170,10 @@ public final class GradleProjectBuilder {
             }
             GradleDependencyConfiguration dc = results.get(conf.getName());
             if (dc != null) {
-//                List<GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
-//                        .map(it -> results.get(it.getName()))
-//                        .collect(Collectors.toList());
-//                dc.unsafeSetExtendsFrom(extendsFrom);
-                throw new UnsupportedOperationException("boom");
+                List<GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
+                        .map(it -> results.get(it.getName()))
+                        .collect(Collectors.toList());
+                dc.unsafeSetExtendsFrom(extendsFrom);
             }
         }
         return results;
