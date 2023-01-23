@@ -88,16 +88,15 @@ public class GradleDependencyConfiguration implements Serializable {
     }
 
     private static Dependency fromToolingModel(org.openrewrite.gradle.toolingapi.Dependency dep) {
-        return new Dependency(
-                fromToolingModel(dep.getGav()),
-                dep.getScope(),
-                dep.getType(),
-                dep.getScope(),
-                dep.getExclusions().stream()
+        return Dependency.builder()
+                .gav(fromToolingModel(dep.getGav()))
+                .scope(dep.getScope())
+                .type(dep.getType())
+                .exclusions(dep.getExclusions().stream()
                         .map(GradleDependencyConfiguration::fromToolingModel)
-                        .collect(Collectors.toList()),
-                dep.getOptional()
-        );
+                        .collect(Collectors.toList()))
+                .optional(dep.getOptional())
+                .build();
     }
 
     private static GroupArtifact fromToolingModel(org.openrewrite.gradle.toolingapi.GroupArtifact ga) {
