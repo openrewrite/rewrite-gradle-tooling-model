@@ -75,19 +75,16 @@ public class GradleDependencyConfiguration implements Serializable {
     }
 
     private static ResolvedDependency fromToolingModel(org.openrewrite.gradle.toolingapi.ResolvedDependency dep) {
-        return new ResolvedDependency(
-                org.openrewrite.gradle.marker.GradleProject.fromToolingModel(dep.getRepository()),
-                fromToolingModel(dep.getGav()),
-                fromToolingModel(dep.getRequested()),
-                dep.getDependencies().stream()
+        return ResolvedDependency.builder()
+                .repository(org.openrewrite.gradle.marker.GradleProject.fromToolingModel(dep.getRepository()))
+                .gav(fromToolingModel(dep.getGav()))
+                .requested(fromToolingModel(dep.getRequested()))
+                .dependencies(dep.getDependencies().stream()
                         .map(GradleDependencyConfiguration::fromToolingModel)
-                        .collect(Collectors.toList()),
-                emptyList(),
-                null,
-                null,
-                null,
-                dep.getDepth()
-        );
+                        .collect(Collectors.toList()))
+                .licenses(emptyList())
+                .depth(dep.getDepth())
+                .build();
     }
 
     private static Dependency fromToolingModel(org.openrewrite.gradle.toolingapi.Dependency dep) {
