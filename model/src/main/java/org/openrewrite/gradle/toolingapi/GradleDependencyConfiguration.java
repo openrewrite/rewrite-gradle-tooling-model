@@ -22,6 +22,12 @@ public interface GradleDependencyConfiguration {
 
     String getDescription();
 
+    boolean isTransitive();
+
+    boolean isCanBeConsumed();
+
+    boolean isCanBeResolved();
+
     List<GradleDependencyConfiguration> getExtendsFrom();
 
     List<Dependency> getRequested();

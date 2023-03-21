@@ -41,6 +41,8 @@ public class GradleDependencyConfiguration implements Serializable {
 
     boolean isTransitive;
 
+    boolean isCanBeConsumed;
+
     boolean isCanBeResolved;
 
     /**
@@ -58,8 +60,9 @@ public class GradleDependencyConfiguration implements Serializable {
         return new GradleDependencyConfiguration(
                 config.getName(),
                 config.getDescription(),
-                false,
-                true,
+                config.isTransitive(),
+                config.isCanBeConsumed(),
+                config.isCanBeResolved(),
                 config.getExtendsFrom().stream()
                         .map(GradleDependencyConfiguration::fromToolingModel)
                         .collect(Collectors.toList()),
