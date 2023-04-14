@@ -147,8 +147,10 @@ public final class GradleProjectBuilder {
                     // Some common configuration, like "implementation" are not resolvable.
                     // These configurations are extended from by other configurations which are resolvable
                     // But a recipe author will be interested in where the dependency is originally coming from
-                    resolvedConf = configurationContainer.create("resolvable" + conf.getName(), it -> it.extendsFrom(conf))
-                            .getResolvedConfiguration();
+                    Configuration resolvableConf = configurationContainer.create("resolvable" + conf.getName(), it -> it.extendsFrom(conf))
+                            .setTransitive(conf.isTransitive());
+                    resolvableConf.setCanBeConsumed(false);
+                    resolvedConf = resolvableConf.getResolvedConfiguration();
                 }
                 Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested = requested.stream()
                         .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
