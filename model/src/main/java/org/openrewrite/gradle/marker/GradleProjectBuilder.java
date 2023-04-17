@@ -140,23 +140,17 @@ public final class GradleProjectBuilder {
                     .collect(Collectors.toList());
 
             try {
-                ResolvedConfiguration resolvedConf;
-                if (conf.isCanBeResolved()) {
-                    resolvedConf = conf.getResolvedConfiguration();
-                } else {
-                    // Some common configuration, like "implementation" are not resolvable.
-                    // These configurations are extended from by other configurations which are resolvable
-                    // But a recipe author will be interested in where the dependency is originally coming from
-                    Configuration resolvableConf = configurationContainer.create("resolvable" + conf.getName(), it -> it.extendsFrom(conf))
-                            .setTransitive(conf.isTransitive());
-                    resolvableConf.setCanBeConsumed(false);
-                    resolvedConf = resolvableConf.getResolvedConfiguration();
-                }
+                List<org.openrewrite.maven.tree.ResolvedDependency> resolved;
                 Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested = requested.stream()
                         .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
-                Map<GroupArtifact, ResolvedDependency> gaToResolved = resolvedConf.getFirstLevelModuleDependencies().stream()
-                        .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
-                List<org.openrewrite.maven.tree.ResolvedDependency> resolved = resolved(gaToRequested, gaToResolved);
+                if (conf.isCanBeResolved()) {
+                    ResolvedConfiguration resolvedConf = conf.getResolvedConfiguration();
+                    Map<GroupArtifact, ResolvedDependency> gaToResolved = resolvedConf.getFirstLevelModuleDependencies().stream()
+                            .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
+                    resolved = resolved(gaToRequested, gaToResolved);
+                } else {
+                    resolved = emptyList();
+                }
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
                         conf.isTransitive(), conf.isCanBeResolved(), emptyList(), requested, resolved);
                 results.put(conf.getName(), dc);

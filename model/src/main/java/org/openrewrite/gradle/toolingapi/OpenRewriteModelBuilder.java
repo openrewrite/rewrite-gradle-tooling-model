@@ -31,7 +31,6 @@ import java.nio.file.StandardCopyOption;
 public class OpenRewriteModelBuilder {
     public static OpenRewriteModel forProjectDirectory(File projectDir) {
         DefaultGradleConnector connector = (DefaultGradleConnector) GradleConnector.newConnector();
-//        connector.useBuildDistribution()
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
         } else {

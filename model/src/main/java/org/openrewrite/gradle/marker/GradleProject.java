@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  * Not automatically available on LSTs that aren't parsed through a Gradle plugin, so tests won't automatically have
  * access to this metadata.
  */
+@SuppressWarnings("unused")
 @Value
 @With
 public class GradleProject implements Marker, Serializable {
@@ -53,6 +54,40 @@ public class GradleProject implements Marker, Serializable {
 
     public List<GradleDependencyConfiguration> getConfigurations() {
         return new ArrayList<>(nameToConfiguration.values());
+    }
+
+    /**
+     * List the configurations which extend from the given configuration.
+     * Assuming a hierarchy like:
+     * <pre>
+     *     implementation
+     *     |> compileClasspath
+     *     |> runtimeClasspath
+     *     |> testImplementation
+     *        |> testCompileClasspath
+     *        |> testRuntimeClasspath
+     * </pre>
+     *
+     * When querying "implementation" with transitive is false this function will return [compileClasspath, runtimeClasspath, testImplementation].
+     * When transitive is true this function will also return [testCompileClasspath, testRuntimeClasspath].
+     */
+    public List<GradleDependencyConfiguration> configurationsExtendingFrom(
+            GradleDependencyConfiguration parentConfiguration,
+            boolean transitive
+    ) {
+        List<GradleDependencyConfiguration> result = new ArrayList<>();
+        for (GradleDependencyConfiguration configuration : nameToConfiguration.values()) {
+            if(configuration == parentConfiguration) {
+                continue;
+            }
+            if(configuration.getExtendsFrom().contains(parentConfiguration)) {
+                result.add(configuration);
+                if(transitive) {
+                    result.addAll(configurationsExtendingFrom(configuration, true));
+                }
+            }
+        }
+        return result;
     }
 
     @Nullable

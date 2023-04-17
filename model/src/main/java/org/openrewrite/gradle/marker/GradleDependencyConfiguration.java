@@ -22,7 +22,10 @@ import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.maven.tree.*;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
@@ -54,12 +57,36 @@ public class GradleDependencyConfiguration implements Serializable {
     List<Dependency> requested;
     List<ResolvedDependency> resolved;
 
+    /**
+     * List the configurations which are extended by the given configuration.
+     * Assuming a hierarchy like:
+     * <pre>
+     *     implementation
+     *     |> compileClasspath
+     *     |> runtimeClasspath
+     *     |> testImplementation
+     *        |> testCompileClasspath
+     *        |> testRuntimeClasspath
+     * </pre>
+     *
+     * When querying "testCompileClasspath" this function will return [testImplementation, implementation].
+     *
+     */
+    public List<GradleDependencyConfiguration> allExtendsFrom() {
+        Set<GradleDependencyConfiguration> result = new LinkedHashSet<>();
+        for (GradleDependencyConfiguration parentConfiguration : getExtendsFrom()) {
+            result.add(parentConfiguration);
+            result.addAll(parentConfiguration.allExtendsFrom());
+        }
+        return new ArrayList<>(result);
+    }
+
     public static GradleDependencyConfiguration fromToolingModel(org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config) {
         return new GradleDependencyConfiguration(
                 config.getName(),
                 config.getDescription(),
-                false,
-                true,
+                config.isTransitive(),
+                config.isCanBeResolved(),
                 config.getExtendsFrom().stream()
                         .map(GradleDependencyConfiguration::fromToolingModel)
                         .collect(Collectors.toList()),
@@ -83,7 +110,9 @@ public class GradleDependencyConfiguration implements Serializable {
                         .map(GradleDependencyConfiguration::fromToolingModel)
                         .collect(Collectors.toList()))
                 .licenses(emptyList())
-                .depth(dep.getDepth())
+                // Setting depth to "0" everywhere isn't accurate, but this saves memory and
+                // depth isn't meaningful for Gradle conflict resolution the way it is for Maven.
+                .depth(0)
                 .build();
     }
 
