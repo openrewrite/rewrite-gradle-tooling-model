@@ -152,7 +152,7 @@ public final class GradleProjectBuilder {
                     resolved = emptyList();
                 }
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), emptyList(), requested, resolved);
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
                 // No need to fail constructing the marker if a configuration cannot be resolved

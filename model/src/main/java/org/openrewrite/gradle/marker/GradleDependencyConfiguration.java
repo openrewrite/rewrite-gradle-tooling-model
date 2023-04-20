@@ -46,6 +46,8 @@ public class GradleDependencyConfiguration implements Serializable {
 
     boolean isCanBeResolved;
 
+    boolean isCanBeConsumed;
+
     /**
      * The list of zero or more configurations this configuration extends from.
      * The extended configuration's dependencies are all requested as part of this configuration, but different versions
@@ -87,6 +89,7 @@ public class GradleDependencyConfiguration implements Serializable {
                 config.getDescription(),
                 config.isTransitive(),
                 config.isCanBeResolved(),
+                config.isCanBeConsumed(),
                 config.getExtendsFrom().stream()
                         .map(GradleDependencyConfiguration::fromToolingModel)
                         .collect(Collectors.toList()),
