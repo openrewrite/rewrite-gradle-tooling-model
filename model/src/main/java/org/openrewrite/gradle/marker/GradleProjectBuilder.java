@@ -155,7 +155,7 @@ public final class GradleProjectBuilder {
                         conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
-                // No need to fail constructing the marker if a configuration cannot be resolved
+                throw new RuntimeException(e);
             }
         }
 
@@ -203,7 +203,10 @@ public final class GradleProjectBuilder {
 
                     // Gradle knows which repository it got a dependency from, but haven't been able to find where that info lives
                     ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(resolved);
-                    return resolvedCache.computeIfAbsent(resolvedGav, it -> org.openrewrite.maven.tree.ResolvedDependency.builder()
+                    if(resolvedCache.containsKey(resolvedGav)) {
+                        return resolvedCache.get(resolvedGav);
+                    }
+                    org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
                             .gav(resolvedGav)
                             // There may not be a requested entry if a dependency substitution rule took effect
                             // the DependencyHandler has the substitution mapping buried inside it, but not exposed publicly
@@ -211,10 +214,12 @@ public final class GradleProjectBuilder {
                             .requested(gaToRequested.getOrDefault(ga, dependency(resolved)))
                             .dependencies(resolved.getChildren().stream()
                                     .map(child -> resolved(child, 1, resolvedCache))
-                                    .collect(Collectors.toList()))
+                                    .collect(toList()))
                             .licenses(emptyList())
                             .depth(0)
-                            .build());
+                            .build();
+                    resolvedCache.put(resolvedGav, resolvedDependency);
+                    return resolvedDependency;
                 })
                 .collect(Collectors.toList());
     }
@@ -242,16 +247,20 @@ public final class GradleProjectBuilder {
             Map<org.openrewrite.maven.tree.ResolvedGroupArtifactVersion, org.openrewrite.maven.tree.ResolvedDependency> resolvedCache
     ) {
         ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(dep);
-        return resolvedCache.computeIfAbsent(resolvedGav, it ->
-                org.openrewrite.maven.tree.ResolvedDependency.builder()
-                        .gav(resolvedGav)
-                        .requested(dependency(dep))
-                        .dependencies(dep.getChildren().stream()
-                                .map(child -> resolved(child, depth + 1, resolvedCache))
-                                .collect(Collectors.toList()))
-                        .licenses(emptyList())
-                        .depth(depth)
-                        .build());
+        if(resolvedCache.containsKey(resolvedGav)) {
+            return resolvedCache.get(resolvedGav);
+        }
+        org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
+                .gav(resolvedGav)
+                .requested(dependency(dep))
+                .dependencies(dep.getChildren().stream()
+                        .map(child -> resolved(child, depth + 1, resolvedCache))
+                        .collect(toList()))
+                .licenses(emptyList())
+                .depth(depth)
+                .build();
+        resolvedCache.put(resolvedGav, resolvedDependency);
+        return resolvedDependency;
     }
 
     @SuppressWarnings("unused")
