@@ -34,7 +34,7 @@ public class OpenRewriteModelBuilder {
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
         } else {
-            connector.useGradleVersion("7.4.2");
+            connector.useGradleVersion("7.6");
         }
         connector.forProjectDirectory(projectDir);
         try (ProjectConnection connection = connector.connect()) {
