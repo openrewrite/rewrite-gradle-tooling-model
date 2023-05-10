@@ -250,16 +250,18 @@ public final class GradleProjectBuilder {
         ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(dep);
         org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
         if(resolvedDependency == null) {
+
+            List<org.openrewrite.maven.tree.ResolvedDependency> dependencies = new ArrayList<>();
+
             resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
                     .gav(resolvedGav)
                     .requested(dependency(dep))
-                    .dependencies(dep.getChildren().stream()
-                            .map(child -> resolved(child, depth + 1, resolvedCache))
-                            .collect(toList()))
+                    .dependencies(dependencies)
                     .licenses(emptyList())
-                    .depth(depth)
-                    .build();
+                    .depth(depth).build();
+            //we add a temporal resolved dependency in the cache to avoid stackoverflow with dependencies that have cycles
             resolvedCache.put(resolvedGav, resolvedDependency);
+            dep.getChildren().forEach(child -> dependencies.add(resolved(child, depth + 1, resolvedCache)));
         }
         return resolvedDependency;
     }
