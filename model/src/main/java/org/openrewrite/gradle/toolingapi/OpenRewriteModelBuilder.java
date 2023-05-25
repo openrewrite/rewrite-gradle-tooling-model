@@ -19,6 +19,7 @@ import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
+import org.openrewrite.internal.lang.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,9 +28,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OpenRewriteModelBuilder {
-    public static OpenRewriteModel forProjectDirectory(File projectDir) {
+    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) {
         DefaultGradleConnector connector = (DefaultGradleConnector) GradleConnector.newConnector();
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
@@ -37,15 +40,22 @@ public class OpenRewriteModelBuilder {
             connector.useGradleVersion("7.6");
         }
         connector.forProjectDirectory(projectDir);
+        List<String> arguments = new ArrayList<>();
+        if (buildFile != null && buildFile.exists()) {
+            arguments.add("-b");
+            arguments.add(buildFile.getAbsolutePath());
+        }
+        arguments.add("--init-script");
+        Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle");
+        arguments.add(init.toString());
         try (ProjectConnection connection = connector.connect()) {
             ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
-            Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle");
             try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
                 if (is == null) {
                     throw new IllegalStateException("Expected to find init.gradle on the classpath");
                 }
                 Files.copy(is, init, StandardCopyOption.REPLACE_EXISTING);
-                customModelBuilder.withArguments("--init-script", "openrewrite-tooling.gradle");
+                customModelBuilder.withArguments(arguments);
                 return customModelBuilder.get();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

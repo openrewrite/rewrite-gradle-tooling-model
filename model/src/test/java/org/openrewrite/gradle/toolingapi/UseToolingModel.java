@@ -18,7 +18,7 @@ import java.io.File;
 
 public class UseToolingModel {
     public static void main(String[] args) {
-        OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(new File("sample"));
+        OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(new File("sample"), new File("sample/build.gradle"));
         System.out.println(model.gradleProject().getMavenRepositories());
         System.out.println(model.gradleProject().getNameToConfiguration());
     }
