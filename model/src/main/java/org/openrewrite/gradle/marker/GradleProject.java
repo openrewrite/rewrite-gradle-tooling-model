@@ -17,10 +17,8 @@ package org.openrewrite.gradle.marker;
 
 import lombok.Value;
 import lombok.With;
-import org.openrewrite.internal.StringUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.marker.Marker;
-import org.openrewrite.maven.tree.Dependency;
 import org.openrewrite.maven.tree.MavenRepository;
 
 import java.io.Serializable;
@@ -88,15 +86,6 @@ public class GradleProject implements Marker, Serializable {
             }
         }
         return result;
-    }
-
-    @Nullable
-    public Dependency findDependency(String configuration, String groupId, String artifactId) {
-        return nameToConfiguration.get(configuration).getRequested().stream()
-                .filter(d -> StringUtils.matchesGlob(d.getGav().getGroupId(), groupId) &&
-                             StringUtils.matchesGlob(d.getGav().getArtifactId(), artifactId))
-                .findFirst()
-                .orElse(null);
     }
 
     public static GradleProject fromToolingModel(org.openrewrite.gradle.toolingapi.GradleProject project) {

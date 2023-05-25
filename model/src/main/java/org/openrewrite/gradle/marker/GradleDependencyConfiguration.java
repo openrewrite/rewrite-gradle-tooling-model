@@ -18,13 +18,19 @@ package org.openrewrite.gradle.marker;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
+import org.openrewrite.internal.StringUtils;
 import org.openrewrite.internal.lang.Nullable;
-import org.openrewrite.maven.tree.*;
+import org.openrewrite.maven.tree.Dependency;
+import org.openrewrite.maven.tree.GroupArtifact;
+import org.openrewrite.maven.tree.GroupArtifactVersion;
+import org.openrewrite.maven.tree.ResolvedDependency;
+import org.openrewrite.maven.tree.ResolvedGroupArtifactVersion;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,6 +87,24 @@ public class GradleDependencyConfiguration implements Serializable {
             result.addAll(parentConfiguration.allExtendsFrom());
         }
         return new ArrayList<>(result);
+    }
+
+    @Nullable
+    public Dependency findRequestedDependency(String groupId, String artifactId) {
+        return requested.stream()
+                .filter(d -> StringUtils.matchesGlob(d.getGav().getGroupId(), groupId) &&
+                        StringUtils.matchesGlob(d.getGav().getArtifactId(), artifactId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Nullable
+    public ResolvedDependency findResolvedDependency(String groupId, String artifactId) {
+        return resolved.stream()
+                .map(d -> d.findDependency(groupId, artifactId))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     public static GradleDependencyConfiguration fromToolingModel(org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config) {
