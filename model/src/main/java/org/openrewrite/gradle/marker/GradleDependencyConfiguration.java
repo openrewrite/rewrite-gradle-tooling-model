@@ -62,8 +62,19 @@ public class GradleDependencyConfiguration implements Serializable {
     @NonFinal
     List<GradleDependencyConfiguration> extendsFrom;
 
+    @NonFinal
     List<Dependency> requested;
+
+    @NonFinal
     List<ResolvedDependency> resolved;
+
+    public void unsafeSetRequested(List<Dependency> requested) {
+        this.requested = requested;
+    }
+
+    public void unsafeSetResolved(List<ResolvedDependency> resolved) {
+        this.resolved = resolved;
+    }
 
     /**
      * List the configurations which are extended by the given configuration.
