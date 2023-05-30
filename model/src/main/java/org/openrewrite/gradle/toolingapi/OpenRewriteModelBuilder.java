@@ -46,7 +46,7 @@ public class OpenRewriteModelBuilder {
             arguments.add(buildFile.getAbsolutePath());
         }
         arguments.add("--init-script");
-        Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle");
+        Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle").toAbsolutePath();
         arguments.add(init.toString());
         try (ProjectConnection connection = connector.connect()) {
             ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);

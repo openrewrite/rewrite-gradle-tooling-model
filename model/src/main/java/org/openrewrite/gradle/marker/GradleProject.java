@@ -23,6 +23,7 @@ import org.openrewrite.maven.tree.MavenRepository;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -75,17 +76,46 @@ public class GradleProject implements Marker, Serializable {
     ) {
         List<GradleDependencyConfiguration> result = new ArrayList<>();
         for (GradleDependencyConfiguration configuration : nameToConfiguration.values()) {
-            if(configuration == parentConfiguration) {
+            if (configuration == parentConfiguration) {
                 continue;
             }
-            if(configuration.getExtendsFrom().contains(parentConfiguration)) {
-                result.add(configuration);
-                if(transitive) {
-                    result.addAll(configurationsExtendingFrom(configuration, true));
+            for (GradleDependencyConfiguration extendsFrom : configuration.getExtendsFrom()) {
+                if (extendsFrom == parentConfiguration) {
+                    result.add(configuration);
+                    if (transitive) {
+                        result.addAll(configurationsExtendingFrom(configuration, true));
+                    }
                 }
             }
         }
         return result;
+    }
+
+    public GradleProject withNameToConfiguration(Map<String, GradleDependencyConfiguration> nameToConfiguration) {
+        Map<String, GradleDependencyConfiguration> configurations = new HashMap<>(nameToConfiguration);
+        for (GradleDependencyConfiguration gdc : configurations.values()) {
+            List<GradleDependencyConfiguration> extendsFromList = new ArrayList<>(gdc.getExtendsFrom());
+            boolean changed = false;
+            for (int i = 0; i < extendsFromList.size(); i++) {
+                GradleDependencyConfiguration extendsFrom = extendsFromList.get(i);
+                if (configurations.get(extendsFrom.getName()) != extendsFrom) {
+                    extendsFromList.set(i, configurations.get(extendsFrom.getName()));
+                    changed = true;
+                }
+            }
+            if (changed) {
+                configurations.put(gdc.getName(), gdc.withExtendsFrom(extendsFromList));
+            }
+        }
+
+        return new GradleProject(
+                id,
+                name,
+                path,
+                plugins,
+                mavenRepositories,
+                configurations
+        );
     }
 
     public static GradleProject fromToolingModel(org.openrewrite.gradle.toolingapi.GradleProject project) {
@@ -99,8 +129,7 @@ public class GradleProject implements Marker, Serializable {
                 project.getMavenRepositories().stream()
                         .map(GradleProject::fromToolingModel)
                         .collect(Collectors.toList()),
-                project.getNameToConfiguration().entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, e -> GradleDependencyConfiguration.fromToolingModel(e.getValue())))
+                GradleDependencyConfiguration.fromToolingModel(project.getNameToConfiguration())
         );
     }
 

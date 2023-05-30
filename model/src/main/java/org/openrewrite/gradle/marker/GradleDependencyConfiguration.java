@@ -28,8 +28,10 @@ import org.openrewrite.maven.tree.ResolvedGroupArtifactVersion;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -107,16 +109,38 @@ public class GradleDependencyConfiguration implements Serializable {
                 .orElse(null);
     }
 
-    public static GradleDependencyConfiguration fromToolingModel(org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config) {
+    public static Map<String, GradleDependencyConfiguration> fromToolingModel(Map<String, org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration> toolingConfigurations) {
+        Map<String, GradleDependencyConfiguration> results = new HashMap<>();
+        List<org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration> configurations = new ArrayList<>(toolingConfigurations.values());
+        for (org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration toolingConfiguration : configurations) {
+            GradleDependencyConfiguration configuration = fromToolingModel(toolingConfiguration);
+            results.put(configuration.getName(), configuration);
+        }
+
+        // Record the relationships between dependency configurations
+        for (org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration conf : configurations) {
+            if (conf.getExtendsFrom().isEmpty()) {
+                continue;
+            }
+            GradleDependencyConfiguration dc = results.get(conf.getName());
+            if (dc != null) {
+                List<GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
+                        .map(it -> results.get(it.getName()))
+                        .collect(Collectors.toList());
+                dc.unsafeSetExtendsFrom(extendsFrom);
+            }
+        }
+        return results;
+    }
+
+    private static GradleDependencyConfiguration fromToolingModel(org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config) {
         return new GradleDependencyConfiguration(
                 config.getName(),
                 config.getDescription(),
                 config.isTransitive(),
                 config.isCanBeResolved(),
                 config.isCanBeConsumed(),
-                config.getExtendsFrom().stream()
-                        .map(GradleDependencyConfiguration::fromToolingModel)
-                        .collect(Collectors.toList()),
+                emptyList(),
                 config.getRequested().stream().map(GradleDependencyConfiguration::fromToolingModel)
                         .collect(Collectors.toList()),
                 config.getResolved().stream().map(GradleDependencyConfiguration::fromToolingModel)
