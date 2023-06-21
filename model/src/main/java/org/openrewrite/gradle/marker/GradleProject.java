@@ -22,11 +22,7 @@ import org.openrewrite.marker.Marker;
 import org.openrewrite.maven.tree.MavenRepository;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -44,6 +40,7 @@ public class GradleProject implements Marker, Serializable {
     String path;
     List<GradlePluginDescriptor> plugins;
     List<MavenRepository> mavenRepositories;
+    List<MavenRepository> mavenPluginRepositories;
     Map<String, GradleDependencyConfiguration> nameToConfiguration;
 
     @Nullable
@@ -114,6 +111,7 @@ public class GradleProject implements Marker, Serializable {
                 path,
                 plugins,
                 mavenRepositories,
+                mavenPluginRepositories,
                 configurations
         );
     }
@@ -127,6 +125,9 @@ public class GradleProject implements Marker, Serializable {
                         .map(GradlePluginDescriptor::fromToolingModel)
                         .collect(Collectors.toList()),
                 project.getMavenRepositories().stream()
+                        .map(GradleProject::fromToolingModel)
+                        .collect(Collectors.toList()),
+                project.getMavenPluginRepositories().stream()
                         .map(GradleProject::fromToolingModel)
                         .collect(Collectors.toList()),
                 GradleDependencyConfiguration.fromToolingModel(project.getNameToConfiguration())

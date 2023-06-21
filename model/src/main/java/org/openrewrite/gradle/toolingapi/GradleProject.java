@@ -27,5 +27,7 @@ public interface GradleProject {
 
     List<MavenRepository> getMavenRepositories();
 
+    List<MavenRepository> getMavenPluginRepositories();
+
     Map<String, GradleDependencyConfiguration> getNameToConfiguration();
 }

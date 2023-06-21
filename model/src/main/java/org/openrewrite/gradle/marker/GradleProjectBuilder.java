@@ -17,10 +17,14 @@ package org.openrewrite.gradle.marker;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.plugins.PluginManagerInternal;
 import org.gradle.api.plugins.PluginManager;
+import org.gradle.invocation.DefaultGradle;
 import org.gradle.plugin.use.PluginId;
+import org.gradle.util.GradleVersion;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.maven.tree.GroupArtifact;
@@ -43,21 +47,32 @@ public final class GradleProjectBuilder {
     }
 
     public static GradleProject gradleProject(Project project) {
+        Set<MavenRepository> pluginRepositories = new HashSet<>();
+        if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0) {
+            Settings settings = ((DefaultGradle) project.getGradle()).getSettings();
+            pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
+        }
+        pluginRepositories.addAll(mapRepositories(project.getBuildscript().getRepositories()));
         return new GradleProject(Tree.randomId(),
                 project.getName(),
                 project.getPath(),
                 GradleProjectBuilder.pluginDescriptors(project.getPluginManager()),
-                project.getRepositories().stream()
-                        .filter(MavenArtifactRepository.class::isInstance)
-                        .map(MavenArtifactRepository.class::cast)
-                        .map(repo -> MavenRepository.builder()
-                                .id(repo.getName())
-                                .uri(repo.getUrl().toString())
-                                .releases(true)
-                                .snapshots(true)
-                                .build())
-                        .collect(toList()),
+                mapRepositories(project.getRepositories()),
+                new ArrayList<>(pluginRepositories),
                 GradleProjectBuilder.dependencyConfigurations(project.getConfigurations()));
+    }
+
+    private static List<MavenRepository> mapRepositories(List<ArtifactRepository> repositories) {
+        return repositories.stream()
+                .filter(MavenArtifactRepository.class::isInstance)
+                .map(MavenArtifactRepository.class::cast)
+                .map(repo -> MavenRepository.builder()
+                        .id(repo.getName())
+                        .uri(repo.getUrl().toString())
+                        .releases(true)
+                        .snapshots(true)
+                        .build())
+                .collect(toList());
     }
 
     public static List<GradlePluginDescriptor> pluginDescriptors(@Nullable PluginManager pluginManager) {
