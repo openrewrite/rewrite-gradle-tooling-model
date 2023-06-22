@@ -43,6 +43,10 @@ public class GradleProject implements Marker, Serializable {
     List<MavenRepository> mavenPluginRepositories;
     Map<String, GradleDependencyConfiguration> nameToConfiguration;
 
+    public List<MavenRepository> getMavenPluginRepositories() {
+        return mavenPluginRepositories == null ? Collections.emptyList() : mavenPluginRepositories;
+    }
+
     @Nullable
     public GradleDependencyConfiguration getConfiguration(String name) {
         return nameToConfiguration.get(name);
