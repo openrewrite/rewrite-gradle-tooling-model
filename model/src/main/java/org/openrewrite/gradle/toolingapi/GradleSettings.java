@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2023 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,13 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import org.openrewrite.internal.lang.Nullable;
+import java.util.List;
+import java.util.Map;
 
-public interface OpenRewriteModel {
+public interface GradleSettings {
+    List<MavenRepository> getPluginRepositories();
 
-    GradleProject gradleProject();
+    List<GradlePluginDescriptor> getPlugins();
 
-    @Nullable
-    GradleSettings gradleSettings();
+    Map<String, FeaturePreview> getFeaturePreviews();
 }

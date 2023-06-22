@@ -16,17 +16,26 @@
 package org.openrewrite.gradle.toolingapi;
 
 import org.openrewrite.gradle.marker.GradleProject;
+import org.openrewrite.gradle.marker.GradleSettings;
+import org.openrewrite.internal.lang.Nullable;
 
 import java.io.Serializable;
 
 public class OpenRewriteModelImpl implements Serializable {
     private final GradleProject gradleProject;
+    private final GradleSettings gradleSettings;
 
-    public OpenRewriteModelImpl(GradleProject gradleProject) {
+    public OpenRewriteModelImpl(GradleProject gradleProject, @Nullable GradleSettings gradleSettings) {
         this.gradleProject = gradleProject;
+        this.gradleSettings = gradleSettings;
     }
 
     public GradleProject gradleProject() {
         return gradleProject;
+    }
+
+    @Nullable
+    public GradleSettings gradleSettings() {
+        return gradleSettings;
     }
 }
