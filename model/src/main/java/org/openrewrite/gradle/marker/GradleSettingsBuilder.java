@@ -15,7 +15,6 @@
  */
 package org.openrewrite.gradle.marker;
 
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.initialization.DefaultSettings;
@@ -28,28 +27,32 @@ import org.openrewrite.maven.tree.MavenRepository;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
+
+import static org.openrewrite.gradle.marker.GradleProjectBuilder.mapRepositories;
 
 public final class GradleSettingsBuilder {
+    static MavenRepository GRADLE_PLUGIN_PORTAL = MavenRepository.builder()
+            .id("Gradle Central Plugin Repository")
+            .uri("https://plugins.gradle.org/m2")
+            .releases(true)
+            .snapshots(true)
+            .build();
+
     private GradleSettingsBuilder() {
     }
 
     public static GradleSettings gradleSettings(Settings settings) {
+        Set<MavenRepository> pluginRepositories = new HashSet<>();
+        pluginRepositories.addAll(mapRepositories(settings.getPluginManagement().getRepositories()));
+        pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
+        if (pluginRepositories.isEmpty()) {
+            pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
+        }
+
         return new GradleSettings(
                 Tree.randomId(),
-                settings.getBuildscript().getRepositories().stream()
-                        .filter(MavenArtifactRepository.class::isInstance)
-                        .map(MavenArtifactRepository.class::cast)
-                        .map(repo -> MavenRepository.builder()
-                                .id(repo.getName())
-                                .uri(repo.getUrl().toString())
-                                .releases(true)
-                                .snapshots(true)
-                                .build())
-                        .collect(Collectors.toList()),
+                new ArrayList<>(pluginRepositories),
                 GradleProjectBuilder.pluginDescriptors(settings.getPluginManager()),
                 featurePreviews((DefaultSettings) settings)
         );

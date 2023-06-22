@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
+import static org.openrewrite.gradle.marker.GradleSettingsBuilder.GRADLE_PLUGIN_PORTAL;
 
 public final class GradleProjectBuilder {
 
@@ -50,9 +51,14 @@ public final class GradleProjectBuilder {
         Set<MavenRepository> pluginRepositories = new HashSet<>();
         if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0) {
             Settings settings = ((DefaultGradle) project.getGradle()).getSettings();
+            pluginRepositories.addAll(mapRepositories(settings.getPluginManagement().getRepositories()));
             pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
         }
         pluginRepositories.addAll(mapRepositories(project.getBuildscript().getRepositories()));
+        if (pluginRepositories.isEmpty()) {
+            pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
+        }
+
         return new GradleProject(Tree.randomId(),
                 project.getName(),
                 project.getPath(),
@@ -62,7 +68,7 @@ public final class GradleProjectBuilder {
                 GradleProjectBuilder.dependencyConfigurations(project.getConfigurations()));
     }
 
-    private static List<MavenRepository> mapRepositories(List<ArtifactRepository> repositories) {
+    static List<MavenRepository> mapRepositories(List<ArtifactRepository> repositories) {
         return repositories.stream()
                 .filter(MavenArtifactRepository.class::isInstance)
                 .map(MavenArtifactRepository.class::cast)
