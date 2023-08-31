@@ -17,6 +17,7 @@ package org.openrewrite.gradle.marker;
 
 import lombok.Value;
 import lombok.With;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.marker.Marker;
 import org.openrewrite.maven.tree.MavenRepository;
 
@@ -32,8 +33,10 @@ public class GradleSettings implements Marker, Serializable {
     List<GradlePluginDescriptor> plugins;
     Map<String, FeaturePreview> featurePreviews;
 
-    public boolean isFeatureEnabled(String name) {
-        return featurePreviews.get(name).isEnabled();
+    @Nullable
+    public Boolean isFeatureEnabled(String name) {
+        // Unclear how enabled status can be determined in latest gradle APIs
+        return null;
     }
 
     public Set<FeaturePreview> getActiveFeatures() {

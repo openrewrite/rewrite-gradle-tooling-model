@@ -17,6 +17,7 @@ package org.openrewrite.gradle.marker;
 
 import lombok.Value;
 import lombok.With;
+import org.openrewrite.internal.lang.Nullable;
 
 import java.io.Serializable;
 
@@ -30,7 +31,8 @@ public class FeaturePreview implements Serializable {
 
     boolean active;
 
-    boolean enabled;
+    @Nullable
+    Boolean enabled;
 
     static FeaturePreview fromToolingModel(org.openrewrite.gradle.toolingapi.FeaturePreview toolingFeaturePreview) {
         return new FeaturePreview(

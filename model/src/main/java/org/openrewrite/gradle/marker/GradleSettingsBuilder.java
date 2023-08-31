@@ -68,15 +68,15 @@ public final class GradleSettingsBuilder {
         if (gradleFeaturePreviews != null) {
             FeaturePreviews.Feature[] gradleFeatures = FeaturePreviews.Feature.values();
             for (FeaturePreviews.Feature feature : gradleFeatures) {
-                featurePreviews.put(feature.name(), new FeaturePreview(feature.name(), feature.isActive(), gradleFeaturePreviews.isFeatureEnabled(feature)));
+                // Unclear how enabled status can be determined in latest gradle APIs
+                featurePreviews.put(feature.name(), new FeaturePreview(feature.name(), feature.isActive(), null));
             }
         }
         return featurePreviews;
     }
 
     @Nullable
-    @SuppressWarnings("unchecked")
-    private static <T> T getService(DefaultSettings settings, Class<T> serviceType) {
+    private static <T> T getService(DefaultSettings settings, @SuppressWarnings("SameParameterValue") Class<T> serviceType) {
         try {
             Method services = settings.getClass().getDeclaredMethod("getServices");
             services.setAccessible(true);
