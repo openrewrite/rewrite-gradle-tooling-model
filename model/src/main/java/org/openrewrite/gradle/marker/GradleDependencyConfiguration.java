@@ -68,6 +68,18 @@ public class GradleDependencyConfiguration implements Serializable {
     List<ResolvedDependency> resolved;
 
     /**
+     * The type of exception thrown when attempting to resolve this configuration. null if no exception was thrown.
+     */
+    @Nullable
+    String exceptionType;
+
+    /**
+     * The message of the exception thrown when attempting to resolve this configuration. null if no exception was thrown.
+     */
+    @Nullable
+    String message;
+
+    /**
      * List the configurations which are extended by the given configuration.
      * Assuming a hierarchy like:
      * <pre>
@@ -144,7 +156,9 @@ public class GradleDependencyConfiguration implements Serializable {
                 config.getRequested().stream().map(GradleDependencyConfiguration::fromToolingModel)
                         .collect(Collectors.toList()),
                 config.getResolved().stream().map(GradleDependencyConfiguration::fromToolingModel)
-                        .collect(Collectors.toList())
+                        .collect(Collectors.toList()),
+                null,
+                null
         );
     }
 

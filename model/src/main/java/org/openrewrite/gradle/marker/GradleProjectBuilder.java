@@ -157,11 +157,11 @@ public final class GradleProjectBuilder {
         Map<String, GradleDependencyConfiguration> results = new HashMap<>();
         List<Configuration> configurations = new ArrayList<>(configurationContainer);
         for (Configuration conf : configurations) {
-            List<org.openrewrite.maven.tree.Dependency> requested = conf.getAllDependencies().stream()
-                    .map(dep -> dependency(dep, conf))
-                    .collect(Collectors.toList());
-
             try {
+                List<org.openrewrite.maven.tree.Dependency> requested = conf.getAllDependencies().stream()
+                        .map(dep -> dependency(dep, conf))
+                        .collect(Collectors.toList());
+
                 List<org.openrewrite.maven.tree.ResolvedDependency> resolved;
                 Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested = requested.stream()
                         .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
@@ -174,10 +174,12 @@ public final class GradleProjectBuilder {
                     resolved = emptyList();
                 }
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved);
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, null, null);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
-                throw new RuntimeException("Unable to parse dependencies from configuration " + conf.getName(), e);
+                GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
+                results.put(conf.getName(), dc);
             }
         }
 
