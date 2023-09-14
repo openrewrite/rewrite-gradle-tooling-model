@@ -165,7 +165,9 @@ public final class GradleProjectBuilder {
                 List<org.openrewrite.maven.tree.ResolvedDependency> resolved;
                 Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested = requested.stream()
                         .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
-                if (conf.isCanBeResolved()) {
+                // Archives and default are redundant with other configurations
+                // Newer versions of gradle display warnings with long stack traces when attempting to resolve them
+                if (conf.isCanBeResolved() && !"archives".equals(conf.getName()) && !"default".equals(conf.getName())) {
                     ResolvedConfiguration resolvedConf = conf.getResolvedConfiguration();
                     Map<GroupArtifact, ResolvedDependency> gaToResolved = resolvedConf.getFirstLevelModuleDependencies().stream()
                             .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
