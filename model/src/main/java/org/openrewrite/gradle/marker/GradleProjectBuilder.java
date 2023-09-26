@@ -50,7 +50,7 @@ public final class GradleProjectBuilder {
     public static GradleProject gradleProject(Project project) {
         Set<MavenRepository> pluginRepositories = new HashSet<>();
         if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0) {
-            Settings settings = ((DefaultGradle) project.getGradle()).getSettings();
+            Settings settings = ((DefaultGradle)project.getGradle()).getSettings();
             pluginRepositories.addAll(mapRepositories(settings.getPluginManagement().getRepositories()));
             pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
         }
@@ -83,7 +83,7 @@ public final class GradleProjectBuilder {
 
     public static List<GradlePluginDescriptor> pluginDescriptors(@Nullable PluginManager pluginManager) {
         if (pluginManager instanceof PluginManagerInternal) {
-            return pluginDescriptors((PluginManagerInternal) pluginManager);
+            return pluginDescriptors((PluginManagerInternal)pluginManager);
         }
         return emptyList();
     }
@@ -101,7 +101,7 @@ public final class GradleProjectBuilder {
         try {
             Method findPluginIdForClass = PluginManagerInternal.class.getMethod("findPluginIdForClass", Class.class);
             //noinspection unchecked
-            Optional<PluginId> maybePluginId = (Optional<PluginId>) findPluginIdForClass.invoke(pluginManager, pluginClass);
+            Optional<PluginId> maybePluginId = (Optional<PluginId>)findPluginIdForClass.invoke(pluginManager, pluginClass);
             return maybePluginId.map(PluginId::getId).orElse(null);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             // On old versions of gradle that don't have this method, returning null is fine
@@ -230,7 +230,7 @@ public final class GradleProjectBuilder {
                     // Gradle knows which repository it got a dependency from, but haven't been able to find where that info lives
                     ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(resolved);
                     org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
-                    if(resolvedDependency == null) {
+                    if (resolvedDependency == null) {
                         resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
                                 .gav(resolvedGav)
                                 // There may not be a requested entry if a dependency substitution rule took effect
@@ -274,7 +274,7 @@ public final class GradleProjectBuilder {
     ) {
         ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(dep);
         org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
-        if(resolvedDependency == null) {
+        if (resolvedDependency == null) {
 
             List<org.openrewrite.maven.tree.ResolvedDependency> dependencies = new ArrayList<>();
 

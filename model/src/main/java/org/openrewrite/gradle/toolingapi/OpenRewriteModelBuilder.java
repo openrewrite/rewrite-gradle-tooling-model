@@ -33,7 +33,7 @@ import java.util.List;
 
 public class OpenRewriteModelBuilder {
     public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) {
-        DefaultGradleConnector connector = (DefaultGradleConnector) GradleConnector.newConnector();
+        DefaultGradleConnector connector = (DefaultGradleConnector)GradleConnector.newConnector();
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
         } else {

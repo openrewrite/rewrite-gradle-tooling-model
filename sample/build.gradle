@@ -1,11 +1,11 @@
-plugins {
-    id 'java'
+plugins{
+    id'java'
 }
 
-repositories {
+repositories{
     mavenCentral()
 }
 
-dependencies {
-    implementation 'org.apache.commons:commons-lang3:3.4'
+dependencies{
+    implementation'org.apache.commons:commons-lang3:3.4'
 }

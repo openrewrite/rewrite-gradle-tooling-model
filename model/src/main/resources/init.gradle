@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-initscript {
-    repositories {
+initscript{
+    repositories{
         mavenLocal()
-        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+        maven{ url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
         mavenCentral()
     }
 
-    configurations.all {
-        resolutionStrategy {
-            cacheChangingModulesFor 0, 'seconds'
-            cacheDynamicVersionsFor 0, 'seconds'
+    configurations.all{
+        resolutionStrategy{
+            cacheChangingModulesFor0, 'seconds'
+            cacheDynamicVersionsFor0, 'seconds'
         }
     }
 
-    dependencies {
-        classpath 'org.openrewrite.gradle.tooling:plugin:latest.integration'
-        classpath 'org.openrewrite:rewrite-maven:latest.integration'
+    dependencies{
+        classpath'org.openrewrite.gradle.tooling:plugin:latest.integration'
+        classpath'org.openrewrite:rewrite-maven:latest.integration'
     }
 }
 
-allprojects {
-    apply plugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
+allprojects{
+    applyplugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
 }

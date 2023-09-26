@@ -55,7 +55,7 @@ public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
             if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0 &&
                     (new File(project.getProjectDir(), "settings.gradle").exists() ||
                             new File(project.getProjectDir(), "settings.gradle.kts").exists())) {
-                gradleSettings = GradleSettingsBuilder.gradleSettings(((DefaultGradle) project.getGradle()).getSettings());
+                gradleSettings = GradleSettingsBuilder.gradleSettings(((DefaultGradle)project.getGradle()).getSettings());
             }
             return new OpenRewriteModelImpl(gradleProject, gradleSettings);
         }
