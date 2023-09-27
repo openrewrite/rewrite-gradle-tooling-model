@@ -22,17 +22,17 @@ initscript{
 
     configurations.all{
         resolutionStrategy{
-            cacheChangingModulesFor0, 'seconds'
-            cacheDynamicVersionsFor0, 'seconds'
+            cacheChangingModulesFor 0, 'seconds'
+            cacheDynamicVersionsFor 0, 'seconds'
         }
     }
 
     dependencies{
-        classpath'org.openrewrite.gradle.tooling:plugin:latest.integration'
-        classpath'org.openrewrite:rewrite-maven:latest.integration'
+        classpath 'org.openrewrite.gradle.tooling:plugin:latest.integration'
+        classpath 'org.openrewrite:rewrite-maven:latest.integration'
     }
 }
 
 allprojects{
-    applyplugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
+    apply plugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
 }
