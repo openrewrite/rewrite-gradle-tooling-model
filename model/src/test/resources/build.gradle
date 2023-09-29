@@ -1,5 +1,5 @@
-package org.openrewrite.gradle.toolingapi;/*
- * Copyright 2022 the original author or authors.
+/**
+ * Copyright 2023 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,15 @@ package org.openrewrite.gradle.toolingapi;/*
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+plugins{
+    id 'java'
+}
 
-import java.io.File;
+repositories{
+    mavenCentral()
+}
 
-public class UseToolingModel {
-    public static void main(String[] args) {
-        OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(new File("sample"), new File("sample/build.gradle"));
-        System.out.println(model.gradleProject().getMavenRepositories());
-        System.out.println(model.gradleProject().getNameToConfiguration());
-    }
+dependencies{
+    implementation 'org.apache.commons:commons-lang3:3.4'
+    testImplementation("org.projectlombok:lombok:latest.release")
 }
