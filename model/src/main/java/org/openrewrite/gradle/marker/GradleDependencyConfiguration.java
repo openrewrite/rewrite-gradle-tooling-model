@@ -20,20 +20,10 @@ import lombok.With;
 import lombok.experimental.NonFinal;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.internal.lang.Nullable;
-import org.openrewrite.maven.tree.Dependency;
-import org.openrewrite.maven.tree.GroupArtifact;
-import org.openrewrite.maven.tree.GroupArtifactVersion;
-import org.openrewrite.maven.tree.ResolvedDependency;
-import org.openrewrite.maven.tree.ResolvedGroupArtifactVersion;
+import org.openrewrite.maven.tree.*;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
@@ -65,6 +55,14 @@ public class GradleDependencyConfiguration implements Serializable {
     List<GradleDependencyConfiguration> extendsFrom;
 
     List<Dependency> requested;
+
+    /**
+     * The list of direct dependencies resolved for this configuration.
+     */
+    List<ResolvedDependency> directResolved;
+    /**
+     * The list of all dependencies resolved for this configuration, including transitive dependencies.
+     */
     List<ResolvedDependency> resolved;
 
     /**
@@ -79,6 +77,35 @@ public class GradleDependencyConfiguration implements Serializable {
     @Nullable
     String message;
 
+    public GradleDependencyConfiguration(String name, @Nullable String description, boolean isTransitive, boolean isCanBeResolved, boolean isCanBeConsumed, List<GradleDependencyConfiguration> extendsFrom, List<Dependency> requested, List<ResolvedDependency> resolved, @Nullable String exceptionType, @Nullable String message) {
+        this.name = name;
+        this.description = description;
+        this.isTransitive = isTransitive;
+        this.isCanBeResolved = isCanBeResolved;
+        this.isCanBeConsumed = isCanBeConsumed;
+        this.extendsFrom = extendsFrom;
+        this.requested = requested;
+        this.directResolved = resolved;
+        this.resolved = resolveTransitiveDependencies(this.directResolved, new LinkedHashSet<>()); // Maintain order
+        this.exceptionType = exceptionType;
+        this.message = message;
+    }
+
+    /**
+     * Recursively resolve all transitive dependencies for the given list of resolved dependencies.
+     * @param resolved The list of resolved dependencies to resolve transitive dependencies for.
+     * @param alreadyResolved A set of dependencies that have already been resolved. This is used to prevent infinite recursion.
+     * @return A list of all transitive dependencies for the given list of resolved dependencies.
+     */
+    private static List<ResolvedDependency> resolveTransitiveDependencies(List<ResolvedDependency> resolved, Set<ResolvedDependency> alreadyResolved) {
+        for (ResolvedDependency dependency : resolved) {
+            if (alreadyResolved.add(dependency)) {
+                alreadyResolved.addAll(resolveTransitiveDependencies(dependency.getDependencies(), alreadyResolved));
+            }
+        }
+        return new ArrayList<>(alreadyResolved);
+    }
+
     /**
      * List the configurations which are extended by the given configuration.
      * Assuming a hierarchy like:
@@ -90,9 +117,8 @@ public class GradleDependencyConfiguration implements Serializable {
      *        |> testCompileClasspath
      *        |> testRuntimeClasspath
      * </pre>
-     *
+     * <p>
      * When querying "testCompileClasspath" this function will return [testImplementation, implementation].
-     *
      */
     public List<GradleDependencyConfiguration> allExtendsFrom() {
         Set<GradleDependencyConfiguration> result = new LinkedHashSet<>();
@@ -107,7 +133,7 @@ public class GradleDependencyConfiguration implements Serializable {
     public Dependency findRequestedDependency(String groupId, String artifactId) {
         return requested.stream()
                 .filter(d -> StringUtils.matchesGlob(d.getGav().getGroupId(), groupId) &&
-                        StringUtils.matchesGlob(d.getGav().getArtifactId(), artifactId))
+                             StringUtils.matchesGlob(d.getGav().getArtifactId(), artifactId))
                 .findFirst()
                 .orElse(null);
     }
