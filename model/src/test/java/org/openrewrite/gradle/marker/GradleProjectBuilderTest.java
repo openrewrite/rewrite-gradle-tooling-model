@@ -54,13 +54,13 @@ class GradleProjectBuilderTest {
         }
 
         OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(dir.toFile(), dir.resolve("build.gradle").toFile());
-        org.openrewrite.gradle.marker.GradleProject gp = org.openrewrite.gradle.marker.GradleProject.fromToolingModel(model.gradleProject());
+        GradleProject gp = GradleProject.fromToolingModel(model.gradleProject());
         ObjectMapper m = buildMapper();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        m.writeValue(baos, model.gradleProject());
+        m.writeValue(baos,  gp);
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        org.openrewrite.gradle.toolingapi.GradleProject roundTripped = m.readValue(bais, org.openrewrite.gradle.toolingapi.GradleProject.class);
+        GradleProject roundTripped = m.readValue(bais, GradleProject.class);
         assertThat(roundTripped).isEqualTo(gp);
     }
 
