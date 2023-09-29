@@ -23,4 +23,5 @@ repositories{
 
 dependencies{
     implementation 'org.apache.commons:commons-lang3:3.4'
+    testImplementation("org.projectlombok:lombok:latest.release")
 }
