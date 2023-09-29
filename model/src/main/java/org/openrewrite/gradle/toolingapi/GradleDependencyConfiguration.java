@@ -32,7 +32,5 @@ public interface GradleDependencyConfiguration {
 
     List<Dependency> getRequested();
 
-    List<ResolvedDependency> getDirectResolved();
-
     List<ResolvedDependency> getResolved();
 }

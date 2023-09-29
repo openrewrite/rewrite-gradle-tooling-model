@@ -33,13 +33,18 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("unused")
 @Value
-@With
 public class GradleProject implements Marker, Serializable {
+    @With
     UUID id;
+    @With
     String name;
+    @With
     String path;
+    @With
     List<GradlePluginDescriptor> plugins;
+    @With
     List<MavenRepository> mavenRepositories;
+    @With
     List<MavenRepository> mavenPluginRepositories;
     Map<String, GradleDependencyConfiguration> nameToConfiguration;
 
