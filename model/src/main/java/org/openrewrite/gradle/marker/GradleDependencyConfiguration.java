@@ -77,35 +77,6 @@ public class GradleDependencyConfiguration implements Serializable {
     @Nullable
     String message;
 
-    public GradleDependencyConfiguration(String name, @Nullable String description, boolean isTransitive, boolean isCanBeResolved, boolean isCanBeConsumed, List<GradleDependencyConfiguration> extendsFrom, List<Dependency> requested, List<ResolvedDependency> resolved, @Nullable String exceptionType, @Nullable String message) {
-        this.name = name;
-        this.description = description;
-        this.isTransitive = isTransitive;
-        this.isCanBeResolved = isCanBeResolved;
-        this.isCanBeConsumed = isCanBeConsumed;
-        this.extendsFrom = extendsFrom;
-        this.requested = requested;
-        this.directResolved = resolved;
-        this.resolved = resolveTransitiveDependencies(this.directResolved, new LinkedHashSet<>()); // Maintain order
-        this.exceptionType = exceptionType;
-        this.message = message;
-    }
-
-    /**
-     * Recursively resolve all transitive dependencies for the given list of resolved dependencies.
-     * @param resolved The list of resolved dependencies to resolve transitive dependencies for.
-     * @param alreadyResolved A set of dependencies that have already been resolved. This is used to prevent infinite recursion.
-     * @return A list of all transitive dependencies for the given list of resolved dependencies.
-     */
-    private static List<ResolvedDependency> resolveTransitiveDependencies(List<ResolvedDependency> resolved, Set<ResolvedDependency> alreadyResolved) {
-        for (ResolvedDependency dependency : resolved) {
-            if (alreadyResolved.add(dependency)) {
-                alreadyResolved.addAll(resolveTransitiveDependencies(dependency.getDependencies(), alreadyResolved));
-            }
-        }
-        return new ArrayList<>(alreadyResolved);
-    }
-
     /**
      * List the configurations which are extended by the given configuration.
      * Assuming a hierarchy like:
@@ -172,6 +143,9 @@ public class GradleDependencyConfiguration implements Serializable {
     }
 
     private static GradleDependencyConfiguration fromToolingModel(org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config) {
+        List<ResolvedDependency> direct = config.getResolved().stream().map(GradleDependencyConfiguration::fromToolingModel)
+                .collect(Collectors.toList());
+        List<ResolvedDependency> transitive = resolveTransitiveDependencies(direct, new LinkedHashSet<>());
         return new GradleDependencyConfiguration(
                 config.getName(),
                 config.getDescription(),
@@ -181,11 +155,26 @@ public class GradleDependencyConfiguration implements Serializable {
                 emptyList(),
                 config.getRequested().stream().map(GradleDependencyConfiguration::fromToolingModel)
                         .collect(Collectors.toList()),
-                config.getResolved().stream().map(GradleDependencyConfiguration::fromToolingModel)
-                        .collect(Collectors.toList()),
+                direct,
+                transitive,
                 null,
                 null
         );
+    }
+
+    /**
+     * Recursively resolve all transitive dependencies for the given list of resolved dependencies.
+     * @param resolved The list of resolved dependencies to resolve transitive dependencies for.
+     * @param alreadyResolved A set of dependencies that have already been resolved. This is used to prevent infinite recursion.
+     * @return A list of all transitive dependencies for the given list of resolved dependencies.
+     */
+    static List<ResolvedDependency> resolveTransitiveDependencies(List<ResolvedDependency> resolved, Set<ResolvedDependency> alreadyResolved) {
+        for (ResolvedDependency dependency : resolved) {
+            if (alreadyResolved.add(dependency)) {
+                alreadyResolved.addAll(resolveTransitiveDependencies(dependency.getDependencies(), alreadyResolved));
+            }
+        }
+        return new ArrayList<>(alreadyResolved);
     }
 
     void unsafeSetExtendsFrom(List<GradleDependencyConfiguration> extendsFrom) {
