@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
+import static org.openrewrite.gradle.marker.GradleDependencyConfiguration.resolveTransitiveDependencies;
 import static org.openrewrite.gradle.marker.GradleSettingsBuilder.GRADLE_PLUGIN_PORTAL;
 
 public final class GradleProjectBuilder {
@@ -175,12 +176,13 @@ public final class GradleProjectBuilder {
                 } else {
                     resolved = emptyList();
                 }
+                List<org.openrewrite.maven.tree.ResolvedDependency> transitive = resolveTransitiveDependencies(resolved, new LinkedHashSet<>());
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, null, null);
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, transitive, null, null);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
                 results.put(conf.getName(), dc);
             }
         }
