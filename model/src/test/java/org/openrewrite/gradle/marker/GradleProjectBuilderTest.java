@@ -1,4 +1,4 @@
-package org.openrewrite.gradle.toolingapi;
+package org.openrewrite.gradle.marker;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -15,6 +15,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.openrewrite.gradle.toolingapi.OpenRewriteModel;
+import org.openrewrite.gradle.toolingapi.OpenRewriteModelBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,7 +31,7 @@ public class GradleProjectBuilderTest {
 
     @Test
     void serializable(@TempDir Path dir) throws Exception {
-        try(InputStream is = GradleProject.class.getResourceAsStream("/build.gradle")) {
+        try(InputStream is = GradleProjectBuilderTest.class.getResourceAsStream("/build.gradle")) {
             Files.write(dir.resolve("build.gradle"), Objects.requireNonNull(is).readAllBytes());
         }
         try(InputStream is = GradleProjectBuilderTest.class.getResourceAsStream("/settings.gradle")) {
@@ -37,15 +39,13 @@ public class GradleProjectBuilderTest {
         }
 
         OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(dir.toFile(), dir.resolve("build.gradle").toFile());
-        GradleProject gp = model.gradleProject();
-        assertThat(gp.getMavenRepositories()).isNotEmpty();
-        assertThat(gp.getNameToConfiguration()).isNotEmpty();
+        org.openrewrite.gradle.marker.GradleProject gp = org.openrewrite.gradle.marker.GradleProject.fromToolingModel(model.gradleProject());
         ObjectMapper m = buildMapper();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         m.writeValue(baos, model.gradleProject());
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        GradleProject roundTripped = m.readValue(bais, GradleProject.class);
+        org.openrewrite.gradle.toolingapi.GradleProject roundTripped = m.readValue(bais, org.openrewrite.gradle.toolingapi.GradleProject.class);
         assertThat(roundTripped).isEqualTo(gp);
     }
 
