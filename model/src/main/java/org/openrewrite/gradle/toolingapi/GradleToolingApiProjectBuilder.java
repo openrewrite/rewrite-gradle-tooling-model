@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2023 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.gradle.marker;
+package org.openrewrite.gradle.toolingapi;
 
+import lombok.*;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.initialization.Settings;
@@ -25,13 +28,9 @@ import org.gradle.api.plugins.PluginManager;
 import org.gradle.invocation.DefaultGradle;
 import org.gradle.plugin.use.PluginId;
 import org.gradle.util.GradleVersion;
-import org.openrewrite.Tree;
 import org.openrewrite.internal.lang.Nullable;
-import org.openrewrite.maven.tree.GroupArtifact;
-import org.openrewrite.maven.tree.GroupArtifactVersion;
-import org.openrewrite.maven.tree.MavenRepository;
-import org.openrewrite.maven.tree.ResolvedGroupArtifactVersion;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -40,13 +39,113 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
-import static org.openrewrite.gradle.marker.GradleDependencyConfiguration.resolveTransitiveDependencies;
-import static org.openrewrite.gradle.marker.GradleSettingsBuilder.GRADLE_PLUGIN_PORTAL;
 
-public final class GradleProjectBuilder {
+public class GradleToolingApiProjectBuilder {
 
-    private GradleProjectBuilder() {
+    @Builder
+    @Getter
+    static class MavenRepositoryImpl implements MavenRepository, Serializable {
+        String id;
+        String uri;
+        String releases;
+        String snapshots;
+        boolean knownToExist;
+        String username;
+        String password;
+        Boolean DeriveMetadataIfMissing;
     }
+
+    @AllArgsConstructor
+    @Getter
+    static class GradlePluginDescriptorImpl implements GradlePluginDescriptor, Serializable {
+        String fullyQualifiedClassName;
+        String id;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    @EqualsAndHashCode
+    static class GroupArtifactVersionImpl implements GroupArtifactVersion, Serializable {
+        String groupId;
+        String artifactId;
+        String version;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    @EqualsAndHashCode
+    static class GroupArtifactImpl implements GroupArtifact, Serializable {
+        String groupId;
+        String artifactId;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    @Builder
+    @EqualsAndHashCode
+    static class DependencyImpl implements Dependency, Serializable {
+        GroupArtifactVersion gav;
+        String classifier;
+        String type;
+        String scope;
+        List<GroupArtifact> exclusions;
+        String optional;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    @EqualsAndHashCode
+    static class ResolvedGroupArtifactVersionImpl implements ResolvedGroupArtifactVersion, Serializable {
+        String artifactId;
+        String groupId;
+        String version;
+        String datedSnapshotVersion;
+    }
+
+    @AllArgsConstructor
+    @Builder
+    @Getter
+    @EqualsAndHashCode
+    static class ResolvedDependencyImpl implements ResolvedDependency, Serializable {
+        MavenRepositoryImpl repository;
+        ResolvedGroupArtifactVersionImpl gav;
+        DependencyImpl requested;
+        List<ResolvedDependency> dependencies;
+        int depth;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    static class GradleDependencyConfigurationImpl implements GradleDependencyConfiguration, Serializable {
+        String name;
+        String description;
+        boolean transitive;
+        boolean canBeConsumed;
+        boolean canBeResolved;
+        List<GradleDependencyConfiguration> extendsFrom;
+        List<Dependency> requested;
+        List<ResolvedDependency> resolved;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    static class GradleProjectImpl implements GradleProject, Serializable {
+        String name;
+        String group;
+        String version;
+        String path;
+        List<GradlePluginDescriptor> plugins;
+        List<MavenRepository> mavenRepositories;
+        List<MavenRepository> mavenPluginRepositories;
+        Map<String, GradleDependencyConfiguration> nameToConfiguration;
+    }
+
+    static MavenRepositoryImpl GRADLE_PLUGIN_PORTAL = MavenRepositoryImpl.builder()
+            .id("Gradle Central Plugin Repository")
+            .uri("https://plugins.gradle.org/m2")
+            .releases(String.valueOf(true))
+            .snapshots(String.valueOf(true))
+            .build();
 
     public static GradleProject gradleProject(Project project) {
         Set<MavenRepository> pluginRepositories = new HashSet<>();
@@ -60,24 +159,26 @@ public final class GradleProjectBuilder {
             pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
         }
 
-        return new GradleProject(Tree.randomId(),
+        return new GradleProjectImpl(
                 project.getName(),
+                project.getGroup().toString(),
+                project.getVersion().toString(),
                 project.getPath(),
-                GradleProjectBuilder.pluginDescriptors(project.getPluginManager()),
+                pluginDescriptors(project.getPluginManager()),
                 mapRepositories(project.getRepositories()),
                 new ArrayList<>(pluginRepositories),
-                GradleProjectBuilder.dependencyConfigurations(project.getConfigurations()));
+                dependencyConfigurations(project.getConfigurations()));
     }
 
     static List<MavenRepository> mapRepositories(List<ArtifactRepository> repositories) {
         return repositories.stream()
                 .filter(MavenArtifactRepository.class::isInstance)
                 .map(MavenArtifactRepository.class::cast)
-                .map(repo -> MavenRepository.builder()
+                .map(repo -> MavenRepositoryImpl.builder()
                         .id(repo.getName())
                         .uri(repo.getUrl().toString())
-                        .releases(true)
-                        .snapshots(true)
+                        .releases(String.valueOf(true))
+                        .snapshots(String.valueOf(true))
                         .build())
                 .collect(toList());
     }
@@ -91,9 +192,10 @@ public final class GradleProjectBuilder {
 
     public static List<GradlePluginDescriptor> pluginDescriptors(PluginManagerInternal pluginManager) {
         return pluginManager.getPluginContainer().stream()
-                .map(plugin -> new GradlePluginDescriptor(
+                .map(plugin -> new GradlePluginDescriptorImpl(
                         plugin.getClass().getName(),
-                        pluginIdForClass(pluginManager, plugin.getClass())))
+                        pluginIdForClass(pluginManager, plugin.getClass()))
+                )
                 .collect(toList());
     }
 
@@ -110,35 +212,35 @@ public final class GradleProjectBuilder {
         return null;
     }
 
-    private static final Map<GroupArtifact, GroupArtifact> groupArtifactCache = new ConcurrentHashMap<>();
+    private static final Map<GroupArtifactImpl, GroupArtifactImpl> groupArtifactCache = new ConcurrentHashMap<>();
 
-    private static GroupArtifact groupArtifact(org.openrewrite.maven.tree.Dependency dep) {
+    private static GroupArtifactImpl groupArtifact(Dependency dep) {
         //noinspection ConstantConditions
-        return groupArtifactCache.computeIfAbsent(new GroupArtifact(dep.getGroupId(), dep.getArtifactId()), it -> it);
+        return groupArtifactCache.computeIfAbsent(new GroupArtifactImpl(dep.getGav().getGroupId(), dep.getGav().getArtifactId()), it -> it);
     }
 
-    private static GroupArtifact groupArtifact(ResolvedDependency dep) {
-        return groupArtifactCache.computeIfAbsent(new GroupArtifact(dep.getModuleGroup(), dep.getModuleName()), it -> it);
+    private static GroupArtifactImpl groupArtifact(org.gradle.api.artifacts.ResolvedDependency dep) {
+        return groupArtifactCache.computeIfAbsent(new GroupArtifactImpl(dep.getModuleGroup(), dep.getModuleName()), it -> it);
     }
 
-    private static final Map<GroupArtifactVersion, GroupArtifactVersion> groupArtifactVersionCache = new ConcurrentHashMap<>();
+    private static final Map<GroupArtifactVersionImpl, GroupArtifactVersionImpl> groupArtifactVersionCache = new ConcurrentHashMap<>();
 
-    private static GroupArtifactVersion groupArtifactVersion(ResolvedDependency dep) {
+    private static GroupArtifactVersionImpl groupArtifactVersion(org.gradle.api.artifacts.ResolvedDependency dep) {
         return groupArtifactVersionCache.computeIfAbsent(
-                new GroupArtifactVersion(dep.getModuleGroup(), dep.getModuleName(), unspecifiedToNull(dep.getModuleVersion())),
+                new GroupArtifactVersionImpl(dep.getModuleGroup(), dep.getModuleName(), unspecifiedToNull(dep.getModuleVersion())),
                 it -> it);
     }
 
-    private static GroupArtifactVersion groupArtifactVersion(Dependency dep) {
+    private static GroupArtifactVersionImpl groupArtifactVersion(org.gradle.api.artifacts.Dependency dep) {
         return groupArtifactVersionCache.computeIfAbsent(
-                new GroupArtifactVersion(dep.getGroup(), dep.getName(), unspecifiedToNull(dep.getVersion())), it -> it);
+                new GroupArtifactVersionImpl(dep.getGroup(), dep.getName(), unspecifiedToNull(dep.getVersion())), it -> it);
     }
 
-    private static final Map<ResolvedGroupArtifactVersion, ResolvedGroupArtifactVersion> resolvedGroupArtifactVersionCache = new ConcurrentHashMap<>();
+    private static final Map<ResolvedGroupArtifactVersionImpl, ResolvedGroupArtifactVersionImpl> resolvedGroupArtifactVersionCache = new ConcurrentHashMap<>();
 
-    private static ResolvedGroupArtifactVersion resolvedGroupArtifactVersion(ResolvedDependency dep) {
-        return resolvedGroupArtifactVersionCache.computeIfAbsent(new ResolvedGroupArtifactVersion(
-                        null, dep.getModuleGroup(), dep.getModuleName(), dep.getModuleVersion(), null),
+    private static ResolvedGroupArtifactVersionImpl resolvedGroupArtifactVersion(org.gradle.api.artifacts.ResolvedDependency dep) {
+        return resolvedGroupArtifactVersionCache.computeIfAbsent(new ResolvedGroupArtifactVersionImpl(
+                        dep.getModuleName(), dep.getModuleGroup(), dep.getModuleVersion(), null),
                 it -> it);
     }
 
@@ -159,31 +261,32 @@ public final class GradleProjectBuilder {
         List<Configuration> configurations = new ArrayList<>(configurationContainer);
         for (Configuration conf : configurations) {
             try {
-                List<org.openrewrite.maven.tree.Dependency> requested = conf.getAllDependencies().stream()
+                List<Dependency> requested = conf.getAllDependencies().stream()
                         .map(dep -> dependency(dep, conf))
                         .collect(Collectors.toList());
 
-                List<org.openrewrite.maven.tree.ResolvedDependency> resolved;
-                Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested = requested.stream()
-                        .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
+                List<ResolvedDependency> resolved;
+                Map<GroupArtifactImpl, Dependency> gaToRequested = requested.stream()
+                        .collect(Collectors.toMap(GradleToolingApiProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
                 // Archives and default are redundant with other configurations
                 // Newer versions of gradle display warnings with long stack traces when attempting to resolve them
                 // Some Scala plugin we don't care about creates configurations that, for some unknown reason, are difficult to resolve
                 if (conf.isCanBeResolved() && !"archives".equals(conf.getName()) && !"default".equals(conf.getName()) && !conf.getName().startsWith("incrementalScalaAnalysis")) {
                     ResolvedConfiguration resolvedConf = conf.getResolvedConfiguration();
-                    Map<GroupArtifact, ResolvedDependency> gaToResolved = resolvedConf.getFirstLevelModuleDependencies().stream()
-                            .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
+                    Map<GroupArtifactImpl, org.gradle.api.artifacts.ResolvedDependency> gaToResolved = resolvedConf.getFirstLevelModuleDependencies().stream()
+                            .collect(Collectors.toMap(dep -> GradleToolingApiProjectBuilder.groupArtifact(dep), dep -> dep, (a, b) -> a));
                     resolved = resolved(gaToRequested, gaToResolved);
                 } else {
                     resolved = emptyList();
                 }
-                List<org.openrewrite.maven.tree.ResolvedDependency> transitive = resolveTransitiveDependencies(resolved, new LinkedHashSet<>());
-                GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, transitive, null, null);
+                // TODO: Doesn't look like 'transitive' is needed at all for Gradle tooling model side
+                List<ResolvedDependency> transitive = resolveTransitiveDependencies(resolved, new LinkedHashSet<>());
+                GradleDependencyConfigurationImpl dc = new GradleDependencyConfigurationImpl(conf.getName(), conf.getDescription(),
+                        conf.isTransitive(), conf.isCanBeConsumed(), conf.isCanBeResolved(), emptyList(), requested, resolved);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
-                GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
+                GradleDependencyConfigurationImpl dc = new GradleDependencyConfigurationImpl(conf.getName(), conf.getDescription(),
+                        conf.isTransitive(), conf.isCanBeConsumed(), conf.isCanBeResolved(), emptyList(), emptyList(), emptyList());
                 results.put(conf.getName(), dc);
             }
         }
@@ -193,24 +296,33 @@ public final class GradleProjectBuilder {
             if (conf.getExtendsFrom().isEmpty()) {
                 continue;
             }
-            GradleDependencyConfiguration dc = results.get(conf.getName());
+            GradleDependencyConfigurationImpl dc = (GradleDependencyConfigurationImpl) results.get(conf.getName());
             if (dc != null) {
                 List<GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
                         .map(it -> results.get(it.getName()))
                         .collect(Collectors.toList());
-                dc.unsafeSetExtendsFrom(extendsFrom);
+                dc.extendsFrom = extendsFrom;
             }
         }
         return results;
     }
 
-    private static final Map<GroupArtifactVersion, org.openrewrite.maven.tree.Dependency>
+    static List<ResolvedDependency> resolveTransitiveDependencies(List<ResolvedDependency> resolved, Set<ResolvedDependency> alreadyResolved) {
+        for (ResolvedDependency dependency : resolved) {
+            if (alreadyResolved.add(dependency)) {
+                alreadyResolved.addAll(resolveTransitiveDependencies(dependency.getDependencies(), alreadyResolved));
+            }
+        }
+        return new ArrayList<>(alreadyResolved);
+    }
+
+    private static final Map<GroupArtifactVersionImpl, DependencyImpl>
             requestedCache = new ConcurrentHashMap<>();
 
-    private static org.openrewrite.maven.tree.Dependency dependency(Dependency dep, Configuration configuration) {
-        GroupArtifactVersion gav = groupArtifactVersion(dep);
+    private static DependencyImpl dependency(org.gradle.api.artifacts.Dependency dep, Configuration configuration) {
+        GroupArtifactVersionImpl gav = groupArtifactVersion(dep);
         return requestedCache.computeIfAbsent(gav, it ->
-                org.openrewrite.maven.tree.Dependency.builder()
+                DependencyImpl.builder()
                         .gav(gav)
                         .type("jar")
                         .scope(configuration.getName())
@@ -219,31 +331,29 @@ public final class GradleProjectBuilder {
         );
     }
 
-
-    private static List<org.openrewrite.maven.tree.ResolvedDependency> resolved(
-            Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested,
-            Map<GroupArtifact, ResolvedDependency> gaToResolved) {
-        Map<org.openrewrite.maven.tree.ResolvedGroupArtifactVersion, org.openrewrite.maven.tree.ResolvedDependency>
+    private static List<ResolvedDependency> resolved(
+            Map<GroupArtifactImpl, Dependency> gaToRequested,
+            Map<GroupArtifactImpl, org.gradle.api.artifacts.ResolvedDependency> gaToResolved) {
+        Map<ResolvedGroupArtifactVersionImpl, ResolvedDependencyImpl>
                 resolvedCache = new HashMap<>();
         return gaToResolved.entrySet().stream()
                 .map(entry -> {
-                    GroupArtifact ga = entry.getKey();
-                    ResolvedDependency resolved = entry.getValue();
+                    GroupArtifactImpl ga = entry.getKey();
+                    org.gradle.api.artifacts.ResolvedDependency resolved = entry.getValue();
 
                     // Gradle knows which repository it got a dependency from, but haven't been able to find where that info lives
-                    ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(resolved);
-                    org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
+                    ResolvedGroupArtifactVersionImpl resolvedGav = resolvedGroupArtifactVersion(resolved);
+                    ResolvedDependencyImpl resolvedDependency = resolvedCache.get(resolvedGav);
                     if (resolvedDependency == null) {
-                        resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
+                        resolvedDependency = ResolvedDependencyImpl.builder()
                                 .gav(resolvedGav)
                                 // There may not be a requested entry if a dependency substitution rule took effect
                                 // the DependencyHandler has the substitution mapping buried inside it, but not exposed publicly
                                 // Possible improvement to dig that out and use it
-                                .requested(gaToRequested.getOrDefault(ga, dependency(resolved)))
+                                .requested((DependencyImpl) gaToRequested.getOrDefault(ga, dependency(resolved)))
                                 .dependencies(resolved.getChildren().stream()
                                         .map(child -> resolved(child, 1, resolvedCache))
                                         .collect(toList()))
-                                .licenses(emptyList())
                                 .depth(0)
                                 .build();
                         resolvedCache.put(resolvedGav, resolvedDependency);
@@ -259,10 +369,10 @@ public final class GradleProjectBuilder {
      * obvious way to access the resolution of transitive dependencies to figure out what versions are requested during
      * the resolution process.
      */
-    private static org.openrewrite.maven.tree.Dependency dependency(ResolvedDependency dep) {
-        GroupArtifactVersion gav = groupArtifactVersion(dep);
+    private static DependencyImpl dependency(org.gradle.api.artifacts.ResolvedDependency dep) {
+        GroupArtifactVersionImpl gav = groupArtifactVersion(dep);
         return requestedCache.computeIfAbsent(gav, it ->
-                org.openrewrite.maven.tree.Dependency.builder()
+                DependencyImpl.builder()
                         .gav(gav)
                         .type("jar")
                         .scope(dep.getConfiguration())
@@ -271,21 +381,20 @@ public final class GradleProjectBuilder {
         );
     }
 
-    private static org.openrewrite.maven.tree.ResolvedDependency resolved(
-            ResolvedDependency dep, int depth,
-            Map<org.openrewrite.maven.tree.ResolvedGroupArtifactVersion, org.openrewrite.maven.tree.ResolvedDependency> resolvedCache
+    private static ResolvedDependencyImpl resolved(
+            org.gradle.api.artifacts.ResolvedDependency dep, int depth,
+            Map<ResolvedGroupArtifactVersionImpl, ResolvedDependencyImpl> resolvedCache
     ) {
-        ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(dep);
-        org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
+        ResolvedGroupArtifactVersionImpl resolvedGav = resolvedGroupArtifactVersion(dep);
+        ResolvedDependencyImpl resolvedDependency = resolvedCache.get(resolvedGav);
         if (resolvedDependency == null) {
 
-            List<org.openrewrite.maven.tree.ResolvedDependency> dependencies = new ArrayList<>();
+            List<ResolvedDependency> dependencies = new ArrayList<>();
 
-            resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
+            resolvedDependency = ResolvedDependencyImpl.builder()
                     .gav(resolvedGav)
                     .requested(dependency(dep))
                     .dependencies(dependencies)
-                    .licenses(emptyList())
                     .depth(depth).build();
             //we add a temporal resolved dependency in the cache to avoid stackoverflow with dependencies that have cycles
             resolvedCache.put(resolvedGav, resolvedDependency);
@@ -301,4 +410,5 @@ public final class GradleProjectBuilder {
         groupArtifactVersionCache.clear();
         resolvedGroupArtifactVersionCache.clear();
     }
+
 }

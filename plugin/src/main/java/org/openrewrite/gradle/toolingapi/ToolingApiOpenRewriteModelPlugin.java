@@ -21,9 +21,7 @@ import org.gradle.invocation.DefaultGradle;
 import org.gradle.tooling.provider.model.ToolingModelBuilder;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
-import org.openrewrite.gradle.marker.GradleProjectBuilder;
-import org.openrewrite.gradle.marker.GradleSettings;
-import org.openrewrite.gradle.marker.GradleSettingsBuilder;
+import org.openrewrite.gradle.toolingapi.parser.GradleProjectData;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -39,6 +37,7 @@ public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         registry.register(new OpenRewriteModelBuilder());
+        registry.register(new GradleProjectDataBuilder());
     }
 
     private static class OpenRewriteModelBuilder implements ToolingModelBuilder {
@@ -50,14 +49,27 @@ public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
 
         @Override
         public Object buildAll(String modelName, Project project) {
-            org.openrewrite.gradle.marker.GradleProject gradleProject = GradleProjectBuilder.gradleProject(project);
+            GradleProject gradleProject = GradleToolingApiProjectBuilder.gradleProject(project);
             GradleSettings gradleSettings = null;
             if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0 &&
                     (new File(project.getProjectDir(), "settings.gradle").exists() ||
                             new File(project.getProjectDir(), "settings.gradle.kts").exists())) {
-                gradleSettings = GradleSettingsBuilder.gradleSettings(((DefaultGradle)project.getGradle()).getSettings());
+                gradleSettings = GradleToolingApiSettingsBuilder.gradleSettings(((DefaultGradle)project.getGradle()).getSettings());
             }
             return new OpenRewriteModelImpl(gradleProject, gradleSettings);
+        }
+    }
+
+    private static class GradleProjectDataBuilder implements ToolingModelBuilder {
+
+        @Override
+        public boolean canBuild(String modelName) {
+            return modelName.equals(GradleProjectData.class.getName());
+        }
+
+        @Override
+        public Object buildAll(String modelName, Project project) {
+            return GradleProjectData.create(project);
         }
     }
 }

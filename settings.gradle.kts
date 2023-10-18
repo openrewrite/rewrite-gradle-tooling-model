@@ -9,6 +9,7 @@ rootProject.name = "rewrite-gradle-tooling-model"
 
 include("model")
 include("plugin")
+include("parser")
 
 plugins {
     id("com.gradle.enterprise") version "latest.release"

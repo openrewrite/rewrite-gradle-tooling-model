@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2023 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.gradle.toolingapi;
+package org.openrewrite.gradle.toolingapi.parser;
 
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.util.Collection;
 
-public interface GradleProject {
+public interface KotlinSourceSetData {
+
     String getName();
 
-    String getGroup();
+    Collection<File> getKotlin();
 
-    String getVersion();
+    Collection<File> getCompileClasspath();
 
-    String getPath();
+    Collection<File> getImplementationClasspath();
 
-    List<GradlePluginDescriptor> getPlugins();
-
-    List<MavenRepository> getMavenRepositories();
-
-    List<MavenRepository> getMavenPluginRepositories();
-
-    Map<String, GradleDependencyConfiguration> getNameToConfiguration();
 }

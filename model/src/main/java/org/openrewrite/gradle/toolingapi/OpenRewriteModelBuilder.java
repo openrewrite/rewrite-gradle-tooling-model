@@ -32,7 +32,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OpenRewriteModelBuilder {
-    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) {
+
+    public static <T> T forProjectDirectory(Class<T> type, File projectDir, @Nullable File buildFile) {
         DefaultGradleConnector connector = (DefaultGradleConnector)GradleConnector.newConnector();
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
@@ -49,8 +50,8 @@ public class OpenRewriteModelBuilder {
         Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle").toAbsolutePath();
         arguments.add(init.toString());
         try (ProjectConnection connection = connector.connect()) {
-            ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
-            try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
+            ModelBuilder<T> customModelBuilder = connection.model(type);
+            try (InputStream is = OpenRewriteModelBuilder.class.getResourceAsStream("/init.gradle")) {
                 if (is == null) {
                     throw new IllegalStateException("Expected to find init.gradle on the classpath");
                 }
@@ -68,5 +69,8 @@ public class OpenRewriteModelBuilder {
                 }
             }
         }
+    }
+    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) {
+        return forProjectDirectory(OpenRewriteModel.class, projectDir, buildFile);
     }
 }

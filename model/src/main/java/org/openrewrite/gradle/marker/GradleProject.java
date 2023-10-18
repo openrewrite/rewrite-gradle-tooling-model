@@ -39,6 +39,10 @@ public class GradleProject implements Marker, Serializable {
     @With
     String name;
     @With
+    String group;
+    @With
+    String version;
+    @With
     String path;
     @With
     List<GradlePluginDescriptor> plugins;
@@ -117,6 +121,8 @@ public class GradleProject implements Marker, Serializable {
         return new GradleProject(
                 id,
                 name,
+                group,
+                version,
                 path,
                 plugins,
                 mavenRepositories,
@@ -129,6 +135,8 @@ public class GradleProject implements Marker, Serializable {
         return new GradleProject(
                 UUID.randomUUID(),
                 project.getName(),
+                project.getGroup(),
+                project.getVersion(),
                 project.getPath(),
                 project.getPlugins().stream()
                         .map(GradlePluginDescriptor::fromToolingModel)

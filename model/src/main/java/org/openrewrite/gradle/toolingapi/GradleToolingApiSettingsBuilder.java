@@ -13,47 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.gradle.marker;
+package org.openrewrite.gradle.toolingapi;
 
+import lombok.AllArgsConstructor;
+import lombok.Value;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.initialization.DefaultSettings;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.UnknownServiceException;
 import org.gradle.util.GradleVersion;
-import org.openrewrite.Tree;
 import org.openrewrite.internal.lang.Nullable;
-import org.openrewrite.maven.tree.MavenRepository;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static org.openrewrite.gradle.marker.GradleProjectBuilder.mapRepositories;
+public class GradleToolingApiSettingsBuilder {
 
-public final class GradleSettingsBuilder {
-    static MavenRepository GRADLE_PLUGIN_PORTAL = MavenRepository.builder()
-            .id("Gradle Central Plugin Repository")
-            .uri("https://plugins.gradle.org/m2")
-            .releases(true)
-            .snapshots(true)
-            .build();
+    @AllArgsConstructor
+    @Value
+    static class FeaturePreviewImpl implements FeaturePreview, Serializable {
+        String name;
+        boolean active;
+        boolean enabled;
+    }
 
-    private GradleSettingsBuilder() {
+    @AllArgsConstructor
+    @Value
+    static class GradleSettingsImpl implements GradleSettings, Serializable {
+        List<MavenRepository> pluginRepositories;
+        List<GradlePluginDescriptor> plugins;
+        Map<String, FeaturePreview> featurePreviews;
     }
 
     public static GradleSettings gradleSettings(Settings settings) {
+        if (settings == null) {
+            return null;
+        }
         Set<MavenRepository> pluginRepositories = new HashSet<>();
-        pluginRepositories.addAll(mapRepositories(settings.getPluginManagement().getRepositories()));
-        pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
+        pluginRepositories.addAll(GradleToolingApiProjectBuilder.mapRepositories(settings.getPluginManagement().getRepositories()));
+        pluginRepositories.addAll(GradleToolingApiProjectBuilder.mapRepositories(settings.getBuildscript().getRepositories()));
         if (pluginRepositories.isEmpty()) {
-            pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
+            pluginRepositories.add(GradleToolingApiProjectBuilder.GRADLE_PLUGIN_PORTAL);
         }
 
-        return new GradleSettings(
-                Tree.randomId(),
+        return new GradleSettingsImpl(
                 new ArrayList<>(pluginRepositories),
-                GradleProjectBuilder.pluginDescriptors(settings.getPluginManager()),
+                GradleToolingApiProjectBuilder.pluginDescriptors(settings.getPluginManager()),
                 featurePreviews((DefaultSettings)settings)
         );
     }
@@ -69,7 +77,7 @@ public final class GradleSettingsBuilder {
             FeaturePreviews.Feature[] gradleFeatures = FeaturePreviews.Feature.values();
             for (FeaturePreviews.Feature feature : gradleFeatures) {
                 // Unclear how enabled status can be determined in latest gradle APIs
-                featurePreviews.put(feature.name(), new FeaturePreview(feature.name(), feature.isActive(), null));
+                featurePreviews.put(feature.name(), new FeaturePreviewImpl(feature.name(), feature.isActive(), false));
             }
         }
         return featurePreviews;
@@ -86,4 +94,5 @@ public final class GradleSettingsBuilder {
             return null;
         }
     }
+
 }
