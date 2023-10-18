@@ -168,7 +168,8 @@ public final class GradleProjectBuilder {
                         .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
                 // Archives and default are redundant with other configurations
                 // Newer versions of gradle display warnings with long stack traces when attempting to resolve them
-                if (conf.isCanBeResolved() && !"archives".equals(conf.getName()) && !"default".equals(conf.getName())) {
+                // Some Scala plugin we don't care about creates configurations that, for some unknown reason, are difficult to resolve
+                if (conf.isCanBeResolved() && !"archives".equals(conf.getName()) && !"default".equals(conf.getName()) && !conf.getName().startsWith("incrementalScalaAnalysis")) {
                     ResolvedConfiguration resolvedConf = conf.getResolvedConfiguration();
                     Map<GroupArtifact, ResolvedDependency> gaToResolved = resolvedConf.getFirstLevelModuleDependencies().stream()
                             .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));

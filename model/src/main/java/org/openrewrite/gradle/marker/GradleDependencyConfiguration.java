@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 
+@SuppressWarnings("unused")
 @Value
 @With
 public class GradleDependencyConfiguration implements Serializable {
@@ -118,6 +119,7 @@ public class GradleDependencyConfiguration implements Serializable {
                 .orElse(null);
     }
 
+    @SuppressWarnings("DuplicatedCode")
     public static Map<String, GradleDependencyConfiguration> fromToolingModel(Map<String, org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration> toolingConfigurations) {
         Map<String, GradleDependencyConfiguration> results = new HashMap<>();
         List<org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration> configurations = new ArrayList<>(toolingConfigurations.values());
