@@ -166,11 +166,21 @@ public final class GradleProjectBuilder {
                 List<org.openrewrite.maven.tree.ResolvedDependency> resolved;
                 Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested = requested.stream()
                         .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
+                String exceptionType = null;
+                String exceptionMessage = null;
                 // Archives and default are redundant with other configurations
                 // Newer versions of gradle display warnings with long stack traces when attempting to resolve them
                 // Some Scala plugin we don't care about creates configurations that, for some unknown reason, are difficult to resolve
                 if (conf.isCanBeResolved() && !"archives".equals(conf.getName()) && !"default".equals(conf.getName()) && !conf.getName().startsWith("incrementalScalaAnalysis")) {
                     ResolvedConfiguration resolvedConf = conf.getResolvedConfiguration();
+                    if(resolvedConf.hasError()) {
+                        try {
+                            resolvedConf.rethrowFailure();
+                        } catch(ResolveException e) {
+                            exceptionType = e.getClass().getName();
+                            exceptionMessage = e.getMessage();
+                        }
+                    }
                     Map<GroupArtifact, ResolvedDependency> gaToResolved = resolvedConf.getFirstLevelModuleDependencies().stream()
                             .collect(Collectors.toMap(GradleProjectBuilder::groupArtifact, dep -> dep, (a, b) -> a));
                     resolved = resolved(gaToRequested, gaToResolved);
@@ -179,7 +189,7 @@ public final class GradleProjectBuilder {
                 }
                 List<org.openrewrite.maven.tree.ResolvedDependency> transitive = resolveTransitiveDependencies(resolved, new LinkedHashSet<>());
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, transitive, null, null);
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, transitive, exceptionType, exceptionMessage);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
