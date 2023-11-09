@@ -166,7 +166,8 @@ public class GradleDependencyConfiguration implements Serializable {
 
     /**
      * Recursively resolve all transitive dependencies for the given list of resolved dependencies.
-     * @param resolved The list of resolved dependencies to resolve transitive dependencies for.
+     *
+     * @param resolved        The list of resolved dependencies to resolve transitive dependencies for.
      * @param alreadyResolved A set of dependencies that have already been resolved. This is used to prevent infinite recursion.
      * @return A list of all transitive dependencies for the given list of resolved dependencies.
      */
@@ -184,18 +185,34 @@ public class GradleDependencyConfiguration implements Serializable {
     }
 
     private static ResolvedDependency fromToolingModel(org.openrewrite.gradle.toolingapi.ResolvedDependency dep) {
-        return ResolvedDependency.builder()
-                .repository(org.openrewrite.gradle.marker.GradleProject.fromToolingModel(dep.getRepository()))
-                .gav(fromToolingModel(dep.getGav()))
-                .requested(fromToolingModel(dep.getRequested()))
-                .dependencies(dep.getDependencies().stream()
-                        .map(GradleDependencyConfiguration::fromToolingModel)
-                        .collect(Collectors.toList()))
-                .licenses(emptyList())
-                // Setting depth to "0" everywhere isn't accurate, but this saves memory and
-                // depth isn't meaningful for Gradle conflict resolution the way it is for Maven.
-                .depth(0)
-                .build();
+        return fromToolingModel0(dep, new HashMap<>());
+    }
+
+    private static ResolvedDependency fromToolingModel0(org.openrewrite.gradle.toolingapi.ResolvedDependency dep,
+                                                        Map<ResolvedGroupArtifactVersion, ResolvedDependency> resolvedCache) {
+        ResolvedGroupArtifactVersion gav = fromToolingModel(dep.getGav());
+        ResolvedDependency resolvedDependency = resolvedCache.get(gav);
+        if (resolvedDependency != null) {
+            return resolvedDependency;
+        }
+        List<ResolvedDependency> deps = new ArrayList<>(dep.getDependencies().size());
+        resolvedDependency = resolvedCache.computeIfAbsent(
+                gav,
+                k -> ResolvedDependency.builder()
+                        .repository(GradleProject.fromToolingModel(dep.getRepository()))
+                        .gav(gav)
+                        .requested(fromToolingModel(dep.getRequested()))
+                        .dependencies(deps)
+                        .licenses(emptyList())
+                        // Setting depth to "0" everywhere isn't accurate, but this saves memory and
+                        // depth isn't meaningful for Gradle conflict resolution the way it is for Maven.
+                        .depth(0)
+                        .build()
+        );
+        dep.getDependencies().stream()
+                .map(d -> fromToolingModel0(d, resolvedCache))
+                .forEach(deps::add);
+        return resolvedDependency;
     }
 
     private static Dependency fromToolingModel(org.openrewrite.gradle.toolingapi.Dependency dep) {
