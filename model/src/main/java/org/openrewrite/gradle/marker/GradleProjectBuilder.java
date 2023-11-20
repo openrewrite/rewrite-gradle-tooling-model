@@ -55,6 +55,12 @@ public final class GradleProjectBuilder {
             pluginRepositories.addAll(mapRepositories(settings.getPluginManagement().getRepositories()));
             pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
         }
+        List<ArtifactRepository> repositories = project.getRepositories();
+        if(GradleVersion.current().compareTo(GradleVersion.version("6.8")) >= 0) {
+            Settings settings = ((DefaultGradle)project.getGradle()).getSettings();
+            //noinspection UnstableApiUsage
+            repositories.addAll(settings.getDependencyResolutionManagement().getRepositories());
+        }
         pluginRepositories.addAll(mapRepositories(project.getBuildscript().getRepositories()));
         if (pluginRepositories.isEmpty()) {
             pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
@@ -64,7 +70,7 @@ public final class GradleProjectBuilder {
                 project.getName(),
                 project.getPath(),
                 GradleProjectBuilder.pluginDescriptors(project.getPluginManager()),
-                mapRepositories(project.getRepositories()),
+                mapRepositories(repositories),
                 new ArrayList<>(pluginRepositories),
                 GradleProjectBuilder.dependencyConfigurations(project.getConfigurations()));
     }
