@@ -55,7 +55,7 @@ public final class GradleProjectBuilder {
             pluginRepositories.addAll(mapRepositories(settings.getPluginManagement().getRepositories()));
             pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
         }
-        List<ArtifactRepository> repositories = project.getRepositories();
+        List<ArtifactRepository> repositories = new ArrayList<>(project.getRepositories());
         if(GradleVersion.current().compareTo(GradleVersion.version("6.8")) >= 0) {
             Settings settings = ((DefaultGradle)project.getGradle()).getSettings();
             //noinspection UnstableApiUsage
