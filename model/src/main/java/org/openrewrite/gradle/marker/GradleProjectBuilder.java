@@ -51,13 +51,13 @@ public final class GradleProjectBuilder {
     public static GradleProject gradleProject(Project project) {
         Set<MavenRepository> pluginRepositories = new HashSet<>();
         if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0) {
-            Settings settings = ((DefaultGradle)project.getGradle()).getSettings();
+            Settings settings = ((DefaultGradle) project.getGradle()).getSettings();
             pluginRepositories.addAll(mapRepositories(settings.getPluginManagement().getRepositories()));
             pluginRepositories.addAll(mapRepositories(settings.getBuildscript().getRepositories()));
         }
         List<ArtifactRepository> repositories = new ArrayList<>(project.getRepositories());
-        if(GradleVersion.current().compareTo(GradleVersion.version("6.8")) >= 0) {
-            Settings settings = ((DefaultGradle)project.getGradle()).getSettings();
+        if (GradleVersion.current().compareTo(GradleVersion.version("6.8")) >= 0) {
+            Settings settings = ((DefaultGradle) project.getGradle()).getSettings();
             //noinspection UnstableApiUsage
             repositories.addAll(settings.getDependencyResolutionManagement().getRepositories());
         }
@@ -90,7 +90,7 @@ public final class GradleProjectBuilder {
 
     public static List<GradlePluginDescriptor> pluginDescriptors(@Nullable PluginManager pluginManager) {
         if (pluginManager instanceof PluginManagerInternal) {
-            return pluginDescriptors((PluginManagerInternal)pluginManager);
+            return pluginDescriptors((PluginManagerInternal) pluginManager);
         }
         return emptyList();
     }
@@ -108,7 +108,7 @@ public final class GradleProjectBuilder {
         try {
             Method findPluginIdForClass = PluginManagerInternal.class.getMethod("findPluginIdForClass", Class.class);
             //noinspection unchecked
-            Optional<PluginId> maybePluginId = (Optional<PluginId>)findPluginIdForClass.invoke(pluginManager, pluginClass);
+            Optional<PluginId> maybePluginId = (Optional<PluginId>) findPluginIdForClass.invoke(pluginManager, pluginClass);
             return maybePluginId.map(PluginId::getId).orElse(null);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             // On old versions of gradle that don't have this method, returning null is fine
@@ -179,10 +179,10 @@ public final class GradleProjectBuilder {
                 // Some Scala plugin we don't care about creates configurations that, for some unknown reason, are difficult to resolve
                 if (conf.isCanBeResolved() && !"archives".equals(conf.getName()) && !"default".equals(conf.getName()) && !conf.getName().startsWith("incrementalScalaAnalysis")) {
                     ResolvedConfiguration resolvedConf = conf.getResolvedConfiguration();
-                    if(resolvedConf.hasError()) {
+                    if (resolvedConf.hasError()) {
                         try {
                             resolvedConf.rethrowFailure();
-                        } catch(ResolveException e) {
+                        } catch (ResolveException e) {
                             exceptionType = e.getClass().getName();
                             exceptionMessage = e.getMessage();
                         }
