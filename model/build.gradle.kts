@@ -11,6 +11,16 @@ dependencies {
     compileOnly("org.openrewrite:rewrite-core:latest.integration")
     compileOnly("org.openrewrite:rewrite-maven:latest.integration")
 
+    // These are for org.openrewrite.gradle.toolingapi.Assertions
+    compileOnly("org.openrewrite:rewrite-test:latest.integration")
+    compileOnly("org.openrewrite:rewrite-gradle:latest.integration")
+    compileOnly("org.openrewrite:rewrite-groovy:latest.integration")
+    compileOnly("org.openrewrite:rewrite-properties:latest.integration")
+
+    testImplementation("org.openrewrite:rewrite-test:latest.integration")
+    testImplementation("org.openrewrite:rewrite-gradle:latest.integration") {
+        exclude(group = "org.openrewrite.gradle.tooling")
+    }
     testImplementation("org.openrewrite:rewrite-core:latest.integration")
     testImplementation("org.openrewrite:rewrite-maven:latest.integration")
     testImplementation(platform("com.fasterxml.jackson:jackson-bom:latest.release"))
