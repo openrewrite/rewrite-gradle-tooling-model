@@ -4,5 +4,6 @@ plugins {
 
 dependencies {
     implementation(project(":model"))
+    implementation("org.openrewrite:rewrite-gradle:latest.integration")
     implementation(gradleApi())
 }
