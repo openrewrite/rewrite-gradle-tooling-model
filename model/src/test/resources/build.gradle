@@ -22,6 +22,6 @@ repositories{
 }
 
 dependencies{
-    implementation 'org.apache.commons:commons-lang3:3.4'
+    implementation 'org.openrewrite:rewrite-java:7.0.0'
     testImplementation("org.projectlombok:lombok:latest.release")
 }

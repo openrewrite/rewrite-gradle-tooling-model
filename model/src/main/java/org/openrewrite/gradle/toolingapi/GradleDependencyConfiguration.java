@@ -15,7 +15,13 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyList;
 
 public interface GradleDependencyConfiguration {
     String getName();
@@ -33,4 +39,38 @@ public interface GradleDependencyConfiguration {
     List<Dependency> getRequested();
 
     List<ResolvedDependency> getResolved();
+
+    static Map<String, org.openrewrite.gradle.marker.GradleDependencyConfiguration> toMarkers(Collection<GradleDependencyConfiguration> configurations) {
+        Map<String, org.openrewrite.gradle.marker.GradleDependencyConfiguration> results = new HashMap<>();
+        for (org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config : configurations) {
+            results.put(config.getName(), new org.openrewrite.gradle.marker.GradleDependencyConfiguration(
+                    config.getName(),
+                    config.getDescription(),
+                    config.isTransitive(),
+                    config.isCanBeResolved(),
+                    config.isCanBeConsumed(),
+                    emptyList(),
+                    config.getRequested().stream().map(org.openrewrite.gradle.toolingapi.Dependency::toMarkers)
+                            .collect(Collectors.toList()),
+                    org.openrewrite.gradle.toolingapi.ResolvedDependency.toMarker(config.getResolved()),
+                    null,
+                    null
+            ));
+        }
+
+        // Record the relationships between dependency configurations
+        for (org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration conf : configurations) {
+            if (conf.getExtendsFrom().isEmpty()) {
+                continue;
+            }
+            org.openrewrite.gradle.marker.GradleDependencyConfiguration dc = results.get(conf.getName());
+            if (dc != null) {
+                List<org.openrewrite.gradle.marker.GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
+                        .map(it -> results.get(it.getName()))
+                        .collect(Collectors.toList());
+                dc.unsafeSetExtendsFrom(extendsFrom);
+            }
+        }
+        return results;
+    }
 }

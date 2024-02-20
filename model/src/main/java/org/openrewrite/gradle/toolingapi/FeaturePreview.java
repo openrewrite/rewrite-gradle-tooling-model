@@ -21,4 +21,12 @@ public interface FeaturePreview {
     boolean isActive();
 
     boolean isEnabled();
+
+    static org.openrewrite.gradle.marker.FeaturePreview toMarker(FeaturePreview toolingFeaturePreview) {
+        return new org.openrewrite.gradle.marker.FeaturePreview(
+                toolingFeaturePreview.getName(),
+                toolingFeaturePreview.isActive(),
+                toolingFeaturePreview.isEnabled()
+        );
+    }
 }

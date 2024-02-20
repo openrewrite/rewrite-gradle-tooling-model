@@ -17,7 +17,9 @@ package org.openrewrite.gradle.toolingapi;
 
 import org.openrewrite.internal.lang.Nullable;
 
-import java.util.List;
+import java.util.*;
+
+import static java.util.Collections.emptyList;
 
 public interface ResolvedDependency {
     @Nullable
@@ -33,4 +35,42 @@ public interface ResolvedDependency {
     List<ResolvedDependency> getDependencies();
 
     int getDepth();
+
+    static List<org.openrewrite.maven.tree.ResolvedDependency> toMarker(Collection<ResolvedDependency> deps) {
+        ResolvedDependencyMapper mapper = new ResolvedDependencyMapper();
+        List<org.openrewrite.maven.tree.ResolvedDependency> resolved = new ArrayList<>(deps.size());
+        for (org.openrewrite.gradle.toolingapi.ResolvedDependency dep : deps) {
+            resolved.add(mapper.toMarker(dep, 0));
+        }
+        return resolved;
+    }
+}
+
+class ResolvedDependencyMapper {
+    private final Map<org.openrewrite.maven.tree.ResolvedGroupArtifactVersion, org.openrewrite.maven.tree.ResolvedDependency> resolvedCache = new HashMap<>();
+
+    org.openrewrite.maven.tree.ResolvedDependency toMarker(ResolvedDependency dep, int depth) {
+        org.openrewrite.maven.tree.ResolvedGroupArtifactVersion gav = new org.openrewrite.maven.tree.ResolvedGroupArtifactVersion(null,
+                dep.getGav().getGroupId(), dep.getGav().getArtifactId(), dep.getGav().getVersion(), dep.getGav().getDatedSnapshotVersion());
+        org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(gav);
+        if (resolvedDependency != null) {
+            return resolvedDependency;
+        }
+        List<org.openrewrite.maven.tree.ResolvedDependency> deps = new ArrayList<>(dep.getDependencies().size());
+        resolvedDependency = resolvedCache.computeIfAbsent(
+                gav,
+                k -> org.openrewrite.maven.tree.ResolvedDependency.builder()
+                        .repository(MavenRepository.toMarker(dep.getRepository()))
+                        .gav(gav)
+                        .requested(Dependency.toMarkers(dep.getRequested()))
+                        .dependencies(deps)
+                        .licenses(emptyList())
+                        .depth(dep.getDepth())
+                        .build()
+        );
+        dep.getDependencies().stream()
+                .map(d -> toMarker(d, depth + 1))
+                .forEach(deps::add);
+        return resolvedDependency;
+    }
 }

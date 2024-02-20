@@ -17,6 +17,8 @@ package org.openrewrite.gradle.toolingapi;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public interface GradleProject {
     String getName();
@@ -30,4 +32,22 @@ public interface GradleProject {
     List<MavenRepository> getMavenPluginRepositories();
 
     Map<String, GradleDependencyConfiguration> getNameToConfiguration();
+
+    static org.openrewrite.gradle.marker.GradleProject toMarker(GradleProject project) {
+        return new org.openrewrite.gradle.marker.GradleProject(
+                UUID.randomUUID(),
+                project.getName(),
+                project.getPath(),
+                project.getPlugins().stream()
+                        .map(GradlePluginDescriptor::toMarker)
+                        .collect(Collectors.toList()),
+                project.getMavenRepositories().stream()
+                        .map(MavenRepository::toMarker)
+                        .collect(Collectors.toList()),
+                project.getMavenPluginRepositories().stream()
+                        .map(MavenRepository::toMarker)
+                        .collect(Collectors.toList()),
+                GradleDependencyConfiguration.toMarkers(project.getNameToConfiguration().values())
+        );
+    }
 }

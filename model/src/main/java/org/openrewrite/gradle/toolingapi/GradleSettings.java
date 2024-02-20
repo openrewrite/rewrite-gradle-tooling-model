@@ -17,6 +17,8 @@ package org.openrewrite.gradle.toolingapi;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public interface GradleSettings {
     List<MavenRepository> getPluginRepositories();
@@ -24,4 +26,18 @@ public interface GradleSettings {
     List<GradlePluginDescriptor> getPlugins();
 
     Map<String, FeaturePreview> getFeaturePreviews();
+
+    static org.openrewrite.gradle.marker.GradleSettings toMarker(GradleSettings settings) {
+        return new org.openrewrite.gradle.marker.GradleSettings(
+                UUID.randomUUID(),
+                settings.getPluginRepositories().stream()
+                        .map(MavenRepository::toMarker)
+                        .collect(Collectors.toList()),
+                settings.getPlugins().stream()
+                        .map(GradlePluginDescriptor::toMarker)
+                        .collect(Collectors.toList()),
+                settings.getFeaturePreviews().entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> FeaturePreview.toMarker(e.getValue())))
+        );
+    }
 }

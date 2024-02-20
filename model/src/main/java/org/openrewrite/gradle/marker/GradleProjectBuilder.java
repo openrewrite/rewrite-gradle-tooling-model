@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
-import static org.openrewrite.gradle.marker.GradleDependencyConfiguration.resolveTransitiveDependencies;
 import static org.openrewrite.gradle.marker.GradleSettingsBuilder.GRADLE_PLUGIN_PORTAL;
 
 public final class GradleProjectBuilder {
@@ -193,13 +192,12 @@ public final class GradleProjectBuilder {
                 } else {
                     resolved = emptyList();
                 }
-                List<org.openrewrite.maven.tree.ResolvedDependency> transitive = resolveTransitiveDependencies(resolved, new LinkedHashSet<>());
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, transitive, exceptionType, exceptionMessage);
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, exceptionType, exceptionMessage);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
                 results.put(conf.getName(), dc);
             }
         }
@@ -234,7 +232,6 @@ public final class GradleProjectBuilder {
                         .build()
         );
     }
-
 
     private static List<org.openrewrite.maven.tree.ResolvedDependency> resolved(
             Map<GroupArtifact, org.openrewrite.maven.tree.Dependency> gaToRequested,
@@ -294,9 +291,7 @@ public final class GradleProjectBuilder {
         ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(dep);
         org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
         if (resolvedDependency == null) {
-
             List<org.openrewrite.maven.tree.ResolvedDependency> dependencies = new ArrayList<>();
-
             resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
                     .gav(resolvedGav)
                     .requested(dependency(dep))

@@ -29,24 +29,33 @@ import com.fasterxml.jackson.databind.type.LogicalType;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openrewrite.gradle.toolingapi.OpenRewriteModel;
 import org.openrewrite.gradle.toolingapi.OpenRewriteModelBuilder;
+import org.openrewrite.maven.tree.ResolvedDependency;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GradleProjectTest {
+    @TempDir
+    Path dir;
 
-    @Test
-    void serializable(@TempDir Path dir) throws Exception {
+    GradleProject gradleProject;
+
+    @BeforeEach
+    void gradleProject() throws IOException {
         try (InputStream is = GradleProjectTest.class.getResourceAsStream("/build.gradle")) {
             Files.write(dir.resolve("build.gradle"), Objects.requireNonNull(is).readAllBytes());
         }
@@ -55,14 +64,28 @@ class GradleProjectTest {
         }
 
         OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(dir.toFile(), dir.resolve("build.gradle").toFile());
-        GradleProject gp = GradleProject.fromToolingModel(model.gradleProject());
-        ObjectMapper m = buildMapper();
+        gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
+    }
 
+    @Test
+    void transitiveDependencies() {
+        Map<Integer, Integer> dependenciesByDepth = new HashMap<>();
+        for (GradleDependencyConfiguration configuration : gradleProject.getConfigurations()) {
+            for (ResolvedDependency resolvedDependency : configuration.getResolved()) {
+                dependenciesByDepth.merge(resolvedDependency.getDepth(), 1, Integer::sum);
+            }
+        }
+        assertThat(dependenciesByDepth).containsKeys(0, 1);
+    }
+
+    @Test
+    void serializable() throws IOException {
+        ObjectMapper m = buildMapper();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        m.writeValue(baos, gp);
+        m.writeValue(baos, gradleProject);
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         GradleProject roundTripped = m.readValue(bais, GradleProject.class);
-        assertThat(roundTripped).isEqualTo(gp);
+        assertThat(roundTripped).isEqualTo(gradleProject);
     }
 
     ObjectMapper buildMapper() {

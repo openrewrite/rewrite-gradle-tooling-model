@@ -18,6 +18,7 @@ package org.openrewrite.gradle.toolingapi;
 import org.openrewrite.internal.lang.Nullable;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface Dependency {
     GroupArtifactVersion getGav();
@@ -34,4 +35,17 @@ public interface Dependency {
 
     @Nullable
     String getOptional();
+
+    static org.openrewrite.maven.tree.Dependency toMarkers(org.openrewrite.gradle.toolingapi.Dependency dep) {
+        return org.openrewrite.maven.tree.Dependency.builder()
+                .gav(new org.openrewrite.maven.tree.GroupArtifactVersion(dep.getGav().getGroupId(),
+                        dep.getGav().getArtifactId(), dep.getGav().getVersion()))
+                .scope(dep.getScope())
+                .type(dep.getType())
+                .exclusions(dep.getExclusions().stream()
+                        .map(ga -> new org.openrewrite.maven.tree.GroupArtifact(ga.getGroupId(), ga.getArtifactId()))
+                        .collect(Collectors.toList()))
+                .optional(dep.getOptional())
+                .build();
+    }
 }

@@ -33,12 +33,4 @@ public class FeaturePreview implements Serializable {
 
     @Nullable
     Boolean enabled;
-
-    static FeaturePreview fromToolingModel(org.openrewrite.gradle.toolingapi.FeaturePreview toolingFeaturePreview) {
-        return new FeaturePreview(
-                toolingFeaturePreview.getName(),
-                toolingFeaturePreview.isActive(),
-                toolingFeaturePreview.isEnabled()
-        );
-    }
 }

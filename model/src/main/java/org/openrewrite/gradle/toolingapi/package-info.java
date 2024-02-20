@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * This package contains a custom Gradle tooling model that
+ * is used in OpenRewrite Gradle tests to extract similar
+ * model information as is extracted by the OpenRewrite Gradle
+ * plugin.
+ */
 package org.openrewrite.gradle.toolingapi;
-
-public interface GradlePluginDescriptor {
-    String getFullyQualifiedClassName();
-
-    String getId();
-
-    static org.openrewrite.gradle.marker.GradlePluginDescriptor toMarker(GradlePluginDescriptor desc) {
-        return new org.openrewrite.gradle.marker.GradlePluginDescriptor(desc.getFullyQualifiedClassName(), desc.getId());
-    }
-}

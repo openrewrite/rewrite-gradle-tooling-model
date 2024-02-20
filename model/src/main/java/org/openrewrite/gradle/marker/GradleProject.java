@@ -23,7 +23,6 @@ import org.openrewrite.maven.tree.MavenRepository;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 /**
@@ -36,16 +35,22 @@ import java.util.stream.Collectors;
 public class GradleProject implements Marker, Serializable {
     @With
     UUID id;
+
     @With
     String name;
+
     @With
     String path;
+
     @With
     List<GradlePluginDescriptor> plugins;
+
     @With
     List<MavenRepository> mavenRepositories;
+
     @With
     List<MavenRepository> mavenPluginRepositories;
+
     Map<String, GradleDependencyConfiguration> nameToConfiguration;
 
     public List<MavenRepository> getMavenPluginRepositories() {
@@ -72,7 +77,7 @@ public class GradleProject implements Marker, Serializable {
      *        |> testCompileClasspath
      *        |> testRuntimeClasspath
      * </pre>
-     *
+     * <p>
      * When querying "implementation" with transitive is false this function will return [compileClasspath, runtimeClasspath, testImplementation].
      * When transitive is true this function will also return [testCompileClasspath, testRuntimeClasspath].
      */
@@ -122,41 +127,6 @@ public class GradleProject implements Marker, Serializable {
                 mavenRepositories,
                 mavenPluginRepositories,
                 configurations
-        );
-    }
-
-    public static GradleProject fromToolingModel(org.openrewrite.gradle.toolingapi.GradleProject project) {
-        return new GradleProject(
-                UUID.randomUUID(),
-                project.getName(),
-                project.getPath(),
-                project.getPlugins().stream()
-                        .map(GradlePluginDescriptor::fromToolingModel)
-                        .collect(Collectors.toList()),
-                project.getMavenRepositories().stream()
-                        .map(GradleProject::fromToolingModel)
-                        .collect(Collectors.toList()),
-                project.getMavenPluginRepositories().stream()
-                        .map(GradleProject::fromToolingModel)
-                        .collect(Collectors.toList()),
-                GradleDependencyConfiguration.fromToolingModel(project.getNameToConfiguration())
-        );
-    }
-
-    @Nullable
-    static MavenRepository fromToolingModel(@Nullable org.openrewrite.gradle.toolingapi.MavenRepository mavenRepository) {
-        if (mavenRepository == null) {
-            return null;
-        }
-        return new MavenRepository(
-                mavenRepository.getId(),
-                mavenRepository.getUri(),
-                mavenRepository.getReleases(),
-                mavenRepository.getSnapshots(),
-                mavenRepository.isKnownToExist(),
-                mavenRepository.getUsername(),
-                mavenRepository.getPassword(),
-                mavenRepository.getDeriveMetadataIfMissing()
         );
     }
 }

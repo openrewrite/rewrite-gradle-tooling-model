@@ -22,7 +22,10 @@ import org.openrewrite.marker.Marker;
 import org.openrewrite.maven.tree.MavenRepository;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Value
@@ -43,26 +46,5 @@ public class GradleSettings implements Marker, Serializable {
         return featurePreviews.values().stream()
                 .filter(FeaturePreview::isActive)
                 .collect(Collectors.toSet());
-    }
-
-    public static GradleSettings fromToolingModel(org.openrewrite.gradle.toolingapi.GradleSettings settings) {
-        return new GradleSettings(
-                UUID.randomUUID(),
-                settings.getPluginRepositories().stream()
-                        .map(GradleProject::fromToolingModel)
-                        .collect(Collectors.toList()),
-                settings.getPlugins().stream()
-                        .map(GradlePluginDescriptor::fromToolingModel)
-                        .collect(Collectors.toList()),
-                fromToolingModel(settings.getFeaturePreviews())
-        );
-    }
-
-    private static Map<String, FeaturePreview> fromToolingModel(Map<String, org.openrewrite.gradle.toolingapi.FeaturePreview> toolingFeaturePreviews) {
-        Map<String, FeaturePreview> results = new HashMap<>();
-        for (Map.Entry<String, org.openrewrite.gradle.toolingapi.FeaturePreview> featurePreviewEntry : toolingFeaturePreviews.entrySet()) {
-            results.put(featurePreviewEntry.getKey(), FeaturePreview.fromToolingModel(featurePreviewEntry.getValue()));
-        }
-        return results;
     }
 }
