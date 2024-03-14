@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.gradle.Assertions.buildGradle;
 
-public class AssertionsTest implements RewriteTest {
+class AssertionsTest implements RewriteTest {
 
     @Test
     void withToolingApi() {
