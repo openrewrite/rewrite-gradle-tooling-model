@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.gradle.marker.GradleProject;
 import org.openrewrite.test.RewriteTest;
 
+import java.net.URI;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.gradle.Assertions.buildGradle;
 
@@ -35,9 +37,23 @@ class AssertionsTest implements RewriteTest {
                   id 'java'
               }
               """,
-            spec -> spec.afterRecipe(cu -> {
-                assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent();
-            })
+            spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+          )
+        );
+    }
+
+    @Test
+    void withCustomDistributionUri() {
+        rewriteRun(
+          spec -> spec.beforeRecipe(Assertions.withToolingApi(URI.create("https://artifactory.moderne.ninja/artifactory/gradle-distributions/gradle-8.6-bin.zip"))),
+          //language=groovy
+          buildGradle(
+            """
+              plugins {
+                  id 'java'
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
           )
         );
     }

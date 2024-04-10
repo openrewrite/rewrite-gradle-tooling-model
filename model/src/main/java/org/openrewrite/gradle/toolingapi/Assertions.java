@@ -30,6 +30,7 @@ import org.openrewrite.test.UncheckedConsumer;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +43,11 @@ import static java.util.Objects.requireNonNull;
 
 public class Assertions {
 
-    public static UncheckedConsumer<List<SourceFile>> withToolingApi(@Nullable String version, @Nullable String distribution) {
+    public static UncheckedConsumer<List<SourceFile>> withToolingApi(URI distributionUrl) {
+        return withToolingApi(GradleWrapper.create(distributionUrl, new InMemoryExecutionContext()));
+    }
+
+    public static UncheckedConsumer<List<SourceFile>> withToolingApi(@Nullable GradleWrapper gradleWrapper) {
         return sourceFiles -> {
             try {
                 Path tempDirectory = Files.createTempDirectory("project");
@@ -73,15 +78,15 @@ public class Assertions {
                         }
                     }
 
-                    if (version != null) {
-                        GradleWrapper gradleWrapper = GradleWrapper.create(distribution, version, null, new InMemoryExecutionContext());
+                    if(gradleWrapper != null) {
                         Files.createDirectories(projectDir.resolve("gradle/wrapper/"));
-                        Files.write(projectDir.resolve(GradleWrapper.WRAPPER_PROPERTIES_LOCATION), ("distributionBase=GRADLE_USER_HOME\n" +
-                                                                                                    "distributionPath=wrapper/dists\n" +
-                                                                                                    "distributionUrl=" + gradleWrapper.getPropertiesFormattedUrl() + "\n" +
-                                                                                                    "distributionSha256Sum=" + gradleWrapper.getDistributionChecksum().getHexValue() + "\n" +
-                                                                                                    "zipStoreBase=GRADLE_USER_HOME\n" +
-                                                                                                    "zipStorePath=wrapper/dists").getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW);
+                        Files.write(projectDir.resolve(GradleWrapper.WRAPPER_PROPERTIES_LOCATION),
+                                ("distributionBase=GRADLE_USER_HOME\n" +
+                                 "distributionPath=wrapper/dists\n" +
+                                 "distributionUrl=" + gradleWrapper.getPropertiesFormattedUrl() + "\n" +
+                                 ((gradleWrapper.getDistributionChecksum() == null) ? "" : "distributionSha256Sum=" + gradleWrapper.getDistributionChecksum().getHexValue() + "\n") +
+                                 "zipStoreBase=GRADLE_USER_HOME\n" +
+                                 "zipStorePath=wrapper/dists").getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW);
                         Files.write(projectDir.resolve(GradleWrapper.WRAPPER_JAR_LOCATION), gradleWrapper.wrapperJar().printAllAsBytes(), StandardOpenOption.CREATE_NEW);
                         Path gradleSh = projectDir.resolve(GradleWrapper.WRAPPER_SCRIPT_LOCATION);
                         Files.copy(requireNonNull(UpdateGradleWrapper.class.getResourceAsStream("/gradlew")), gradleSh);
@@ -101,7 +106,7 @@ public class Assertions {
                                 OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null);
                                 org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
                                 if (rawSettings != null) {
-                                    GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
+                                    GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings. toMarker(rawSettings);
                                     sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
                                 }
                             } else {
@@ -120,6 +125,15 @@ public class Assertions {
         };
     }
 
+    public static UncheckedConsumer<List<SourceFile>> withToolingApi(@Nullable String version, @Nullable String distribution) {
+        GradleWrapper gradleWrapper = null;
+        if (version != null) {
+            gradleWrapper = GradleWrapper.create(distribution, version, null, new InMemoryExecutionContext());
+        }
+        return withToolingApi(gradleWrapper);
+    }
+
+    @SuppressWarnings("unused")
     public static UncheckedConsumer<List<SourceFile>> withToolingApi(String version) {
         return withToolingApi(version, "bin");
     }
