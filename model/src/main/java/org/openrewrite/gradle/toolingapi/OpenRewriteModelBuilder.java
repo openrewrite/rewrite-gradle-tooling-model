@@ -27,12 +27,53 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("JavadocLinkAsPlainText")
 public class OpenRewriteModelBuilder {
+
+    /**
+     * Build an OpenRewriteModel for a project directory, using the default Gradle init script bundled within this jar.
+     * The included init script accesses public artifact repositories (Maven Central, Nexus Snapshots) to be able to
+     * download rewrite dependencies, so public repositories must be accessible for this to work.
+     */
     public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) {
+        return forProjectDirectory(projectDir, buildFile, null);
+    }
+
+    /**
+     * Build an OpenRewriteModel for a project directory, using the init script contents passed to this function.
+     * When Maven Central / Nexus Snapshots are inaccessible this overload can be used with an alternate Groovy init script
+     * which applies the ToolingApiOpenRewriteModelPlugin to all projects.
+     * Example init script:
+     * <pre>
+     * initscript {
+     *     repositories {
+     *         mavenLocal()
+     *         maven{ url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+     *         mavenCentral()
+     *     }
+     *
+     *     configurations.all {
+     *         resolutionStrategy{
+     *             cacheChangingModulesFor 0, 'seconds'
+     *             cacheDynamicVersionsFor 0, 'seconds'
+     *         }
+     *     }
+     *
+     *     dependencies {
+     *         classpath 'org.openrewrite.gradle.tooling:plugin:latest.integration'
+     *         classpath 'org.openrewrite:rewrite-maven:latest.integration'
+     *     }
+     * }
+     *
+     * allprojects {
+     *     apply plugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
+     * }
+     * </pre>
+     */
+    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript) {
         DefaultGradleConnector connector = (DefaultGradleConnector)GradleConnector.newConnector();
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
@@ -50,11 +91,17 @@ public class OpenRewriteModelBuilder {
         arguments.add(init.toString());
         try (ProjectConnection connection = connector.connect()) {
             ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
-            try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
-                if (is == null) {
-                    throw new IllegalStateException("Expected to find init.gradle on the classpath");
+            try {
+                if(initScript == null) {
+                    try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
+                        if (is == null) {
+                            throw new IllegalStateException("Expected to find init.gradle on the classpath");
+                        }
+                        Files.copy(is, init);
+                    }
+                } else {
+                    Files.write(init, initScript.getBytes());
                 }
-                Files.copy(is, init, StandardCopyOption.REPLACE_EXISTING);
                 customModelBuilder.withArguments(arguments);
                 return customModelBuilder.get();
             } catch (IOException e) {

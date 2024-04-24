@@ -47,7 +47,16 @@ public class Assertions {
         return withToolingApi(GradleWrapper.create(distributionUrl, new InMemoryExecutionContext()));
     }
 
+    @SuppressWarnings("unused")
+    public static UncheckedConsumer<List<SourceFile>> withToolingApi(URI distributionUrl, String initScriptContents) {
+        return withToolingApi(GradleWrapper.create(distributionUrl, new InMemoryExecutionContext()), initScriptContents);
+    }
+
     public static UncheckedConsumer<List<SourceFile>> withToolingApi(@Nullable GradleWrapper gradleWrapper) {
+        return withToolingApi(gradleWrapper, null);
+    }
+
+    public static UncheckedConsumer<List<SourceFile>> withToolingApi(@Nullable GradleWrapper gradleWrapper, @Nullable String initScriptContents) {
         return sourceFiles -> {
             try {
                 Path tempDirectory = Files.createTempDirectory("project");
@@ -103,14 +112,14 @@ public class Assertions {
                         SourceFile sourceFile = sourceFiles.get(i);
                         if (sourceFile.getSourcePath().toString().endsWith(".gradle")) {
                             if (sourceFile.getSourcePath().endsWith("settings.gradle")) {
-                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null);
+                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
                                 org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
                                 if (rawSettings != null) {
                                     GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings. toMarker(rawSettings);
                                     sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
                                 }
                             } else {
-                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile());
+                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
                                 GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
                                 sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
                             }
@@ -139,7 +148,7 @@ public class Assertions {
     }
 
     public static UncheckedConsumer<List<SourceFile>> withToolingApi() {
-        return withToolingApi(null, null);
+        return withToolingApi((GradleWrapper) null, null);
     }
 
     private static void deleteDirectory(File directoryToBeDeleted) {

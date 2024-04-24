@@ -17,6 +17,7 @@ package org.openrewrite.gradle.toolingapi;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.gradle.marker.GradleProject;
+import org.openrewrite.gradle.util.GradleWrapper;
 import org.openrewrite.test.RewriteTest;
 
 import java.net.URI;
@@ -46,6 +47,50 @@ class AssertionsTest implements RewriteTest {
     void withCustomDistributionUri() {
         rewriteRun(
           spec -> spec.beforeRecipe(Assertions.withToolingApi(URI.create("https://artifactory.moderne.ninja/artifactory/gradle-distributions/gradle-8.6-bin.zip"))),
+          //language=groovy
+          buildGradle(
+            """
+              plugins {
+                  id 'java'
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+          )
+        );
+    }
+
+    @Test
+    void customInitScript() {
+        //language=groovy
+        String alternateInit = """
+          initscript{
+              repositories{
+                  mavenLocal()
+                  maven{ url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+                  mavenCentral()
+              }
+          
+              configurations.all{
+                  resolutionStrategy{
+                      cacheChangingModulesFor 0, 'seconds'
+                      cacheDynamicVersionsFor 0, 'seconds'
+                  }
+              }
+          
+              dependencies{
+                  classpath 'org.openrewrite.gradle.tooling:plugin:latest.integration'
+                  classpath 'org.openrewrite:rewrite-maven:latest.integration'
+              }
+          }
+          
+          allprojects{
+              apply plugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
+          }
+          
+          """;
+        GradleWrapper gradleWrapper = GradleWrapper.create(URI.create("https://services.gradle.org/distributions/gradle-8.6-bin.zip"), null);
+        rewriteRun(
+          spec -> spec.beforeRecipe(Assertions.withToolingApi(gradleWrapper, alternateInit)),
           //language=groovy
           buildGradle(
             """
