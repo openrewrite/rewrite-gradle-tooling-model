@@ -102,8 +102,7 @@ public final class GradleProjectBuilder {
                 .collect(toList());
     }
 
-    @Nullable
-    private static String pluginIdForClass(PluginManagerInternal pluginManager, Class<?> pluginClass) {
+    private static @Nullable String pluginIdForClass(PluginManagerInternal pluginManager, Class<?> pluginClass) {
         try {
             Method findPluginIdForClass = PluginManagerInternal.class.getMethod("findPluginIdForClass", Class.class);
             //noinspection unchecked
@@ -151,8 +150,7 @@ public final class GradleProjectBuilder {
      * Some Gradle dependency functions will have the String "unspecified" to indicate a missing value.
      * Rewrite's dependency API represents these missing things as "null"
      */
-    @Nullable
-    private static String unspecifiedToNull(@Nullable String maybeUnspecified) {
+    private static @Nullable String unspecifiedToNull(@Nullable String maybeUnspecified) {
         if ("unspecified".equals(maybeUnspecified)) {
             return null;
         }

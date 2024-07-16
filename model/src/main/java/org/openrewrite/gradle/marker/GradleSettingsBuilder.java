@@ -75,8 +75,7 @@ public final class GradleSettingsBuilder {
         return featurePreviews;
     }
 
-    @Nullable
-    private static <T> T getService(DefaultSettings settings, @SuppressWarnings("SameParameterValue") Class<T> serviceType) {
+    private static <T> @Nullable T getService(DefaultSettings settings, @SuppressWarnings("SameParameterValue") Class<T> serviceType) {
         try {
             Method services = settings.getClass().getDeclaredMethod("getServices");
             services.setAccessible(true);

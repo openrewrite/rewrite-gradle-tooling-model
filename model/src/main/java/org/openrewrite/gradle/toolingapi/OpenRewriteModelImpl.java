@@ -34,8 +34,7 @@ public class OpenRewriteModelImpl implements Serializable {
         return gradleProject;
     }
 
-    @Nullable
-    public GradleSettings gradleSettings() {
+    public @Nullable GradleSettings gradleSettings() {
         return gradleSettings;
     }
 }

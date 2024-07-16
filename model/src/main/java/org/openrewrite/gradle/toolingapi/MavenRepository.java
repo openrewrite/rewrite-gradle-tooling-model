@@ -46,8 +46,7 @@ public interface MavenRepository {
     @Nullable
     Boolean getDeriveMetadataIfMissing();
 
-    @Nullable
-    static org.openrewrite.maven.tree.MavenRepository toMarker(@Nullable MavenRepository mavenRepository) {
+    static @Nullable org.openrewrite.maven.tree.MavenRepository toMarker(@Nullable MavenRepository mavenRepository) {
         if (mavenRepository == null) {
             return null;
         }
