@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.gradle.marker.GradleSettingsBuilder.GRADLE_PLUGIN_PORTAL;
 
 public final class GradleProjectBuilder {
@@ -65,8 +66,10 @@ public final class GradleProjectBuilder {
             pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
         }
 
-        return new GradleProject(Tree.randomId(),
+        return new GradleProject(randomId(),
+                project.getGroup().toString(),
                 project.getName(),
+                project.getVersion().toString(),
                 project.getPath(),
                 GradleProjectBuilder.pluginDescriptors(project.getPluginManager()),
                 mapRepositories(repositories),

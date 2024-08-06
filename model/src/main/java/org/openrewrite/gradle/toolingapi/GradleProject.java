@@ -21,7 +21,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public interface GradleProject {
+    String getGroup();
+
     String getName();
+
+    String getVersion();
 
     String getPath();
 
@@ -36,7 +40,9 @@ public interface GradleProject {
     static org.openrewrite.gradle.marker.GradleProject toMarker(GradleProject project) {
         return new org.openrewrite.gradle.marker.GradleProject(
                 UUID.randomUUID(),
+                project.getGroup(),
                 project.getName(),
+                project.getVersion(),
                 project.getPath(),
                 project.getPlugins().stream()
                         .map(GradlePluginDescriptor::toMarker)
