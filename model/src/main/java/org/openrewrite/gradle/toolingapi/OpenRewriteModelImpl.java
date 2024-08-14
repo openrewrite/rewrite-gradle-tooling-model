@@ -15,9 +15,9 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.gradle.marker.GradleProject;
 import org.openrewrite.gradle.marker.GradleSettings;
-import org.openrewrite.internal.lang.Nullable;
 
 import java.io.Serializable;
 

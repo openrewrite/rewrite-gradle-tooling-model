@@ -15,7 +15,7 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface GroupArtifactVersion {
     @Nullable
