@@ -21,8 +21,8 @@ import org.gradle.initialization.DefaultSettings;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.UnknownServiceException;
 import org.gradle.util.GradleVersion;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.maven.tree.MavenRepository;
 
 import java.lang.reflect.InvocationTargetException;
