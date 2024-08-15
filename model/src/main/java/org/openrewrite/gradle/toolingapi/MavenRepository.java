@@ -15,7 +15,7 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.net.URI;
 
@@ -46,7 +46,7 @@ public interface MavenRepository {
     @Nullable
     Boolean getDeriveMetadataIfMissing();
 
-    static @Nullable org.openrewrite.maven.tree.MavenRepository toMarker(@Nullable MavenRepository mavenRepository) {
+    static org.openrewrite.maven.tree.@Nullable MavenRepository toMarker(@Nullable MavenRepository mavenRepository) {
         if (mavenRepository == null) {
             return null;
         }
