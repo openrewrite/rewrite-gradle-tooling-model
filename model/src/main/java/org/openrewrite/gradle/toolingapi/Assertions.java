@@ -15,6 +15,7 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.SourceFile;
 import org.openrewrite.gradle.UpdateGradleWrapper;
@@ -22,7 +23,6 @@ import org.openrewrite.gradle.marker.GradleProject;
 import org.openrewrite.gradle.marker.GradleSettings;
 import org.openrewrite.gradle.util.GradleWrapper;
 import org.openrewrite.groovy.tree.G;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.marker.OperatingSystemProvenance;
 import org.openrewrite.properties.tree.Properties;
 import org.openrewrite.test.UncheckedConsumer;
