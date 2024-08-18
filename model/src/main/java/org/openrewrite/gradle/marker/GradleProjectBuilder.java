@@ -26,7 +26,6 @@ import org.gradle.invocation.DefaultGradle;
 import org.gradle.plugin.use.PluginId;
 import org.gradle.util.GradleVersion;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.Tree;
 import org.openrewrite.maven.tree.GroupArtifact;
 import org.openrewrite.maven.tree.GroupArtifactVersion;
 import org.openrewrite.maven.tree.MavenRepository;
