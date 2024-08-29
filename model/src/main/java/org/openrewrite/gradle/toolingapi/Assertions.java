@@ -87,7 +87,7 @@ public class Assertions {
                         }
                     }
 
-                    if(gradleWrapper != null) {
+                    if (gradleWrapper != null) {
                         Files.createDirectories(projectDir.resolve("gradle/wrapper/"));
                         Files.write(projectDir.resolve(GradleWrapper.WRAPPER_PROPERTIES_LOCATION),
                                 ("distributionBase=GRADLE_USER_HOME\n" +
@@ -115,11 +115,15 @@ public class Assertions {
                                 OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
                                 org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
                                 if (rawSettings != null) {
-                                    GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings. toMarker(rawSettings);
+                                    GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
                                     sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
                                 }
                             } else {
-                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
+                                File maybeBuildFile = null;
+                                if (sourceFile.getSourcePath().endsWith("build.gradle")) {
+                                    maybeBuildFile = tempDirectory.resolve(sourceFile.getSourcePath()).toFile();
+                                }
+                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), maybeBuildFile, initScriptContents);
                                 GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
                                 sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
                             }
