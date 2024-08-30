@@ -15,18 +15,21 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import org.jspecify.annotations.Nullable;
+
 public interface FeaturePreview {
     String getName();
 
     boolean isActive();
 
-    boolean isEnabled();
+    @Nullable
+    Boolean getEnabled();
 
     static org.openrewrite.gradle.marker.FeaturePreview toMarker(FeaturePreview toolingFeaturePreview) {
         return new org.openrewrite.gradle.marker.FeaturePreview(
                 toolingFeaturePreview.getName(),
                 toolingFeaturePreview.isActive(),
-                toolingFeaturePreview.isEnabled()
+                toolingFeaturePreview.getEnabled()
         );
     }
 }
