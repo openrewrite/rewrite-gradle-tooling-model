@@ -27,6 +27,8 @@ public interface GradleSettings {
 
     Map<String, FeaturePreview> getFeaturePreviews();
 
+    GradleBuildscript getBuildscript();
+
     static org.openrewrite.gradle.marker.GradleSettings toMarker(GradleSettings settings) {
         return new org.openrewrite.gradle.marker.GradleSettings(
                 UUID.randomUUID(),
@@ -37,7 +39,14 @@ public interface GradleSettings {
                         .map(GradlePluginDescriptor::toMarker)
                         .collect(Collectors.toList()),
                 settings.getFeaturePreviews().entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, e -> FeaturePreview.toMarker(e.getValue())))
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> FeaturePreview.toMarker(e.getValue()))),
+                new org.openrewrite.gradle.marker.GradleBuildscript(
+                        UUID.randomUUID(),
+                        settings.getBuildscript().getMavenRepositories().stream()
+                                .map(MavenRepository::toMarker)
+                                .collect(Collectors.toList()),
+                        GradleDependencyConfiguration.toMarkers(settings.getBuildscript().getNameToConfiguration().values())
+                )
         );
     }
 }

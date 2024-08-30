@@ -37,6 +37,8 @@ public interface GradleProject {
 
     Map<String, GradleDependencyConfiguration> getNameToConfiguration();
 
+    GradleBuildscript getBuildscript();
+
     static org.openrewrite.gradle.marker.GradleProject toMarker(GradleProject project) {
         return new org.openrewrite.gradle.marker.GradleProject(
                 UUID.randomUUID(),
@@ -53,7 +55,14 @@ public interface GradleProject {
                 project.getMavenPluginRepositories().stream()
                         .map(MavenRepository::toMarker)
                         .collect(Collectors.toList()),
-                GradleDependencyConfiguration.toMarkers(project.getNameToConfiguration().values())
+                GradleDependencyConfiguration.toMarkers(project.getNameToConfiguration().values()),
+                new org.openrewrite.gradle.marker.GradleBuildscript(
+                        UUID.randomUUID(),
+                        project.getBuildscript().getMavenRepositories().stream()
+                                .map(MavenRepository::toMarker)
+                                .collect(Collectors.toList()),
+                        GradleDependencyConfiguration.toMarkers(project.getBuildscript().getNameToConfiguration().values())
+                )
         );
     }
 }

@@ -22,13 +22,13 @@ import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.UnknownServiceException;
 import org.gradle.util.GradleVersion;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.Tree;
 import org.openrewrite.maven.tree.MavenRepository;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.gradle.marker.GradleProjectBuilder.mapRepositories;
 
 public final class GradleSettingsBuilder {
@@ -51,10 +51,15 @@ public final class GradleSettingsBuilder {
         }
 
         return new GradleSettings(
-                Tree.randomId(),
-                new ArrayList<>(pluginRepositories),
+                randomId(),
+                null,
                 GradleProjectBuilder.pluginDescriptors(settings.getPluginManager()),
-                featurePreviews((DefaultSettings)settings)
+                featurePreviews((DefaultSettings)settings),
+                new GradleBuildscript(
+                        randomId(),
+                        new ArrayList<>(pluginRepositories),
+                        GradleProjectBuilder.dependencyConfigurations(settings.getBuildscript().getConfigurations())
+                )
         );
     }
 
