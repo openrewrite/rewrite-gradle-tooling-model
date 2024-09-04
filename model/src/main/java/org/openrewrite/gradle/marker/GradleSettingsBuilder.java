@@ -18,17 +18,18 @@ package org.openrewrite.gradle.marker;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.initialization.DefaultSettings;
+import org.gradle.internal.buildoption.FeatureFlags;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.UnknownServiceException;
 import org.gradle.util.GradleVersion;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.Tree;
 import org.openrewrite.maven.tree.MavenRepository;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.gradle.marker.GradleProjectBuilder.mapRepositories;
 
 public final class GradleSettingsBuilder {
@@ -51,10 +52,15 @@ public final class GradleSettingsBuilder {
         }
 
         return new GradleSettings(
-                Tree.randomId(),
-                new ArrayList<>(pluginRepositories),
+                randomId(),
+                null,
                 GradleProjectBuilder.pluginDescriptors(settings.getPluginManager()),
-                featurePreviews((DefaultSettings)settings)
+                featurePreviews((DefaultSettings)settings),
+                new GradleBuildscript(
+                        randomId(),
+                        new ArrayList<>(pluginRepositories),
+                        GradleProjectBuilder.dependencyConfigurations(settings.getBuildscript().getConfigurations())
+                )
         );
     }
 
@@ -64,12 +70,25 @@ public final class GradleSettingsBuilder {
         }
 
         Map<String, FeaturePreview> featurePreviews = new HashMap<>();
-        FeaturePreviews gradleFeaturePreviews = getService(settings, FeaturePreviews.class);
-        if (gradleFeaturePreviews != null) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.0")) < 0) {
+            FeaturePreviews gradleFeaturePreviews = getService(settings, FeaturePreviews.class);
+            if (gradleFeaturePreviews != null) {
+                try {
+                    Method method = gradleFeaturePreviews.getClass().getDeclaredMethod("isFeatureEnabled", FeaturePreviews.Feature.class);
+                    FeaturePreviews.Feature[] gradleFeatures = FeaturePreviews.Feature.values();
+                    for (FeaturePreviews.Feature feature : gradleFeatures) {
+                        Boolean enabled = (Boolean) method.invoke(gradleFeaturePreviews, feature);
+                        featurePreviews.put(feature.name(), new FeaturePreview(feature.name(), feature.isActive(), enabled));
+                    }
+                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                    // ignore
+                }
+            }
+        } else {
+            FeatureFlags featureFlags = settings.getServices().get(FeatureFlags.class);
             FeaturePreviews.Feature[] gradleFeatures = FeaturePreviews.Feature.values();
             for (FeaturePreviews.Feature feature : gradleFeatures) {
-                // Unclear how enabled status can be determined in latest gradle APIs
-                featurePreviews.put(feature.name(), new FeaturePreview(feature.name(), feature.isActive(), null));
+                featurePreviews.put(feature.name(), new FeaturePreview(feature.name(), feature.isActive(), featureFlags.isEnabled(feature)));
             }
         }
         return featurePreviews;

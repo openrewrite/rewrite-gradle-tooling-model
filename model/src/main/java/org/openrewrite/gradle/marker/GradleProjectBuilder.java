@@ -72,8 +72,13 @@ public final class GradleProjectBuilder {
                 project.getPath(),
                 GradleProjectBuilder.pluginDescriptors(project.getPluginManager()),
                 mapRepositories(repositories),
-                new ArrayList<>(pluginRepositories),
-                GradleProjectBuilder.dependencyConfigurations(project.getConfigurations()));
+                null,
+                GradleProjectBuilder.dependencyConfigurations(project.getConfigurations()),
+                new GradleBuildscript(
+                        randomId(),
+                        new ArrayList<>(pluginRepositories),
+                        GradleProjectBuilder.dependencyConfigurations(project.getBuildscript().getConfigurations())
+                ));
     }
 
     static List<MavenRepository> mapRepositories(List<ArtifactRepository> repositories) {
@@ -159,7 +164,7 @@ public final class GradleProjectBuilder {
         return maybeUnspecified;
     }
 
-    private static Map<String, GradleDependencyConfiguration> dependencyConfigurations(ConfigurationContainer configurationContainer) {
+    static Map<String, GradleDependencyConfiguration> dependencyConfigurations(ConfigurationContainer configurationContainer) {
         Map<String, GradleDependencyConfiguration> results = new HashMap<>();
         List<Configuration> configurations = new ArrayList<>(configurationContainer);
         for (Configuration conf : configurations) {
