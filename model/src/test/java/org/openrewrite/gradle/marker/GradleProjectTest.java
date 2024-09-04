@@ -30,7 +30,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openrewrite.gradle.toolingapi.OpenRewriteModel;
@@ -49,7 +48,6 @@ import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Disabled
 class GradleProjectTest {
     @TempDir
     Path dir;
