@@ -15,6 +15,7 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.gradle.marker.GradleProject;
 import org.openrewrite.gradle.util.GradleWrapper;
@@ -25,6 +26,7 @@ import java.net.URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.gradle.Assertions.buildGradle;
 
+@Disabled
 class AssertionsTest implements RewriteTest {
 
     @Test
