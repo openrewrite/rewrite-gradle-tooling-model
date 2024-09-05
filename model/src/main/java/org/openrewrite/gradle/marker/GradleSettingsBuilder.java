@@ -18,7 +18,6 @@ package org.openrewrite.gradle.marker;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.initialization.DefaultSettings;
-import org.gradle.internal.buildoption.FeatureFlags;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.UnknownServiceException;
 import org.gradle.util.GradleVersion;
@@ -85,10 +84,13 @@ public final class GradleSettingsBuilder {
                 }
             }
         } else {
-            FeatureFlags featureFlags = settings.getServices().get(FeatureFlags.class);
-            FeaturePreviews.Feature[] gradleFeatures = FeaturePreviews.Feature.values();
-            for (FeaturePreviews.Feature feature : gradleFeatures) {
-                featurePreviews.put(feature.name(), new FeaturePreview(feature.name(), feature.isActive(), featureFlags.isEnabled(feature)));
+            try {
+                Class<?> reflectiveFeaturePreviewFetcher = Class.forName("org.openrewrite.gradle.marker.ReflectiveFeaturePreviewFetcher");
+                Method getPreviewsMethod = reflectiveFeaturePreviewFetcher.getMethod("getPreviews", DefaultSettings.class);
+                //noinspection unchecked
+                featurePreviews.putAll((Map<String, FeaturePreview>) getPreviewsMethod.invoke(null, settings));
+            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                return featurePreviews;
             }
         }
         return featurePreviews;
