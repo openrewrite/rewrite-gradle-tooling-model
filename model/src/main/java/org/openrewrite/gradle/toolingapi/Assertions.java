@@ -129,7 +129,7 @@ public class Assertions {
                             allRepositories.addAll(gradleProject.getMavenRepositories());
                             allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
                             sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
-                        } else if (sourceFile.getSourcePath().endsWith(".gradle")) {
+                        } else if (sourceFile.getSourcePath().toString().endsWith(".gradle")) {
                             freestandingScriptFound = true;
                         }
                     }
@@ -141,7 +141,7 @@ public class Assertions {
                                 emptyList(), emptyMap(), new GradleBuildscript(randomId(), new ArrayList<>(allBuildscriptRepositories), emptyMap()));
                         for (int i = 0; i < sourceFiles.size(); i++) {
                             SourceFile sourceFile = sourceFiles.get(i);
-                            if (sourceFile.getSourcePath().endsWith(".gradle") && !sourceFile.getMarkers().findFirst(GradleProject.class).isPresent()
+                            if (sourceFile.getSourcePath().toString().endsWith(".gradle") && !sourceFile.getMarkers().findFirst(GradleProject.class).isPresent()
                                 && !sourceFile.getMarkers().findFirst(GradleSettings.class).isPresent()) {
                                 sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(freestandingScriptMarker)));
                             }
