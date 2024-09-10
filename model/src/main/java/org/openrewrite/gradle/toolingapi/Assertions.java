@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.SourceFile;
 import org.openrewrite.gradle.UpdateGradleWrapper;
+import org.openrewrite.gradle.marker.GradleBuildscript;
 import org.openrewrite.gradle.marker.GradleProject;
 import org.openrewrite.gradle.marker.GradleSettings;
 import org.openrewrite.gradle.util.GradleWrapper;
@@ -36,10 +37,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
+import static org.openrewrite.Tree.randomId;
 
 public class Assertions {
 
@@ -87,7 +90,7 @@ public class Assertions {
                         }
                     }
 
-                    if(gradleWrapper != null) {
+                    if (gradleWrapper != null) {
                         Files.createDirectories(projectDir.resolve("gradle/wrapper/"));
                         Files.write(projectDir.resolve(GradleWrapper.WRAPPER_PROPERTIES_LOCATION),
                                 ("distributionBase=GRADLE_USER_HOME\n" +
@@ -108,19 +111,40 @@ public class Assertions {
                         Files.copy(requireNonNull(UpdateGradleWrapper.class.getResourceAsStream("/gradlew.bat")), projectDir.resolve(GradleWrapper.WRAPPER_BATCH_LOCATION));
                     }
 
+                    Set<org.openrewrite.maven.tree.MavenRepository> allRepositories = new LinkedHashSet<>();
+                    Set<org.openrewrite.maven.tree.MavenRepository> allBuildscriptRepositories = new LinkedHashSet<>();
+                    boolean freestandingScriptFound = false;
                     for (int i = 0; i < sourceFiles.size(); i++) {
                         SourceFile sourceFile = sourceFiles.get(i);
                         if (sourceFile.getSourcePath().endsWith("settings.gradle")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
                             org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
                             if (rawSettings != null) {
-                                GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings. toMarker(rawSettings);
+                                GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
                                 sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
                             }
                         } else if (sourceFile.getSourcePath().endsWith("build.gradle")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
                             GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
+                            allRepositories.addAll(gradleProject.getMavenRepositories());
+                            allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
                             sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
+                        } else if (sourceFile.getSourcePath().endsWith(".gradle")) {
+                            freestandingScriptFound = true;
+                        }
+                    }
+                    if (freestandingScriptFound) {
+                        // Mimic the behavior of the gradle plugin
+                        // Construct a synthetic marker to apply to freestanding Gradle scripts to aid recipes in resolving dependencies
+                        GradleProject freestandingScriptMarker = new GradleProject(
+                                randomId(), "", "", "", "", emptyList(), new ArrayList<>(allRepositories),
+                                emptyList(), emptyMap(), new GradleBuildscript(randomId(), new ArrayList<>(allBuildscriptRepositories), emptyMap()));
+                        for (int i = 0; i < sourceFiles.size(); i++) {
+                            SourceFile sourceFile = sourceFiles.get(i);
+                            if (sourceFile.getSourcePath().endsWith(".gradle") && !sourceFile.getMarkers().findFirst(GradleProject.class).isPresent()
+                                && !sourceFile.getMarkers().findFirst(GradleSettings.class).isPresent()) {
+                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(freestandingScriptMarker)));
+                            }
                         }
                     }
                 } finally {
