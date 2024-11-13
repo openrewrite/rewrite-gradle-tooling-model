@@ -106,7 +106,7 @@ public class OpenRewriteModelBuilder {
                 customModelBuilder.withArguments(arguments);
                 return customModelBuilder.get();
             } catch (IOException e) {
-                throw new TestAbortedException("Failed to load Gradle tooling API", e);
+                throw new IllegalStateException("Failed to load Gradle tooling API", e);
             } finally {
                 try {
                     Files.delete(init);
