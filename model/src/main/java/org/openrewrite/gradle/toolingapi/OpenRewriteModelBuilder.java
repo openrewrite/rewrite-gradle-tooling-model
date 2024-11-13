@@ -35,15 +35,17 @@ import java.util.List;
 public class OpenRewriteModelBuilder {
 
     /**
+     * <b></b>Warning: This API is likely to change over time without notice</b>
      * Build an OpenRewriteModel for a project directory, using the default Gradle init script bundled within this jar.
      * The included init script accesses public artifact repositories (Maven Central, Nexus Snapshots) to be able to
      * download rewrite dependencies, so public repositories must be accessible for this to work.
      */
-    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) {
+    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) throws IOException {
         return forProjectDirectory(projectDir, buildFile, null);
     }
 
     /**
+     * <b></b>Warning: This API is likely to change over time without notice</b>
      * Build an OpenRewriteModel for a project directory, using the init script contents passed to this function.
      * When Maven Central / Nexus Snapshots are inaccessible this overload can be used with an alternate Groovy init script
      * which applies the ToolingApiOpenRewriteModelPlugin to all projects.
@@ -74,7 +76,7 @@ public class OpenRewriteModelBuilder {
      * }
      * </pre>
      */
-    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript) {
+    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript) throws IOException {
         DefaultGradleConnector connector = (DefaultGradleConnector)GradleConnector.newConnector();
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
@@ -105,8 +107,6 @@ public class OpenRewriteModelBuilder {
                 }
                 customModelBuilder.withArguments(arguments);
                 return customModelBuilder.get();
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to load Gradle tooling API", e);
             } finally {
                 try {
                     Files.delete(init);

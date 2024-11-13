@@ -27,6 +27,7 @@ import org.openrewrite.groovy.tree.G;
 import org.openrewrite.marker.OperatingSystemProvenance;
 import org.openrewrite.properties.tree.Properties;
 import org.openrewrite.test.UncheckedConsumer;
+import org.opentest4j.TestAbortedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -117,18 +118,26 @@ public class Assertions {
                     for (int i = 0; i < sourceFiles.size(); i++) {
                         SourceFile sourceFile = sourceFiles.get(i);
                         if (sourceFile.getSourcePath().endsWith("settings.gradle")) {
-                            OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
-                            org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
-                            if (rawSettings != null) {
-                                GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
-                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
+                            try {
+                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
+                                org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
+                                if (rawSettings != null) {
+                                    GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
+                                    sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
+                                }
+                            } catch (IOException e) {
+                                throw new TestAbortedException("Failed to load Gradle tooling API", e);
                             }
                         } else if (sourceFile.getSourcePath().endsWith("build.gradle")) {
-                            OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
-                            GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
-                            allRepositories.addAll(gradleProject.getMavenRepositories());
-                            allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
-                            sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
+                            try {
+                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
+                                GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
+                                allRepositories.addAll(gradleProject.getMavenRepositories());
+                                allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
+                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
+                            } catch (IOException e) {
+                                throw new TestAbortedException("Failed to load Gradle tooling API", e);
+                            }
                         } else if (sourceFile.getSourcePath().toString().endsWith(".gradle")) {
                             freestandingScriptFound = true;
                         }
