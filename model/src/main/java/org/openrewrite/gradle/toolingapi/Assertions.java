@@ -31,14 +31,16 @@ import org.opentest4j.TestAbortedException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -118,26 +120,18 @@ public class Assertions {
                     for (int i = 0; i < sourceFiles.size(); i++) {
                         SourceFile sourceFile = sourceFiles.get(i);
                         if (sourceFile.getSourcePath().endsWith("settings.gradle")) {
-                            try {
-                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
-                                org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
-                                if (rawSettings != null) {
-                                    GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
-                                    sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
-                                }
-                            } catch (IOException e) {
-                                throw new TestAbortedException("Failed to load Gradle tooling API", e);
+                            OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
+                            org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
+                            if (rawSettings != null) {
+                                GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
+                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
                             }
                         } else if (sourceFile.getSourcePath().endsWith("build.gradle")) {
-                            try {
-                                OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
-                                GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
-                                allRepositories.addAll(gradleProject.getMavenRepositories());
-                                allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
-                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
-                            } catch (IOException e) {
-                                throw new TestAbortedException("Failed to load Gradle tooling API", e);
-                            }
+                            OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
+                            GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
+                            allRepositories.addAll(gradleProject.getMavenRepositories());
+                            allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
+                            sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
                         } else if (sourceFile.getSourcePath().toString().endsWith(".gradle")) {
                             freestandingScriptFound = true;
                         }
@@ -160,7 +154,7 @@ public class Assertions {
                     deleteDirectory(tempDirectory.toFile());
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                throw new TestAbortedException("Failed to load Gradle tooling API", e);
             }
         };
     }
