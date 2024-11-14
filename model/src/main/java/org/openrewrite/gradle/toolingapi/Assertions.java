@@ -27,17 +27,20 @@ import org.openrewrite.groovy.tree.G;
 import org.openrewrite.marker.OperatingSystemProvenance;
 import org.openrewrite.properties.tree.Properties;
 import org.openrewrite.test.UncheckedConsumer;
+import org.opentest4j.TestAbortedException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -151,7 +154,7 @@ public class Assertions {
                     deleteDirectory(tempDirectory.toFile());
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                throw new TestAbortedException("Failed to load Gradle tooling API", e);
             }
         };
     }
