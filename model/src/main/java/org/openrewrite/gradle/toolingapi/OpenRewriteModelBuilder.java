@@ -20,7 +20,6 @@ import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.jspecify.annotations.Nullable;
-import org.opentest4j.TestAbortedException;
 
 import java.io.File;
 import java.io.IOException;
