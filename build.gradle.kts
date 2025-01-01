@@ -1,5 +1,6 @@
 plugins {
     id("org.openrewrite.build.root") version("latest.release")
+    id("org.owasp.dependencycheck") version "latest.release"
 }
 
 allprojects {
