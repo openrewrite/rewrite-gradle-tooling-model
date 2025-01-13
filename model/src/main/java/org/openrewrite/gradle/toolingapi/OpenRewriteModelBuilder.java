@@ -80,7 +80,7 @@ public class OpenRewriteModelBuilder {
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
         } else {
-            connector.useGradleVersion("8.4");
+            connector.useGradleVersion("8.12");
         }
         connector.forProjectDirectory(projectDir);
         List<String> arguments = new ArrayList<>();
