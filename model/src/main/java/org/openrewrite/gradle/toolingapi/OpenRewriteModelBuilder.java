@@ -38,21 +38,9 @@ public class OpenRewriteModelBuilder {
      * Build an OpenRewriteModel for a project directory, using the default Gradle init script bundled within this jar.
      * The included init script accesses public artifact repositories (Maven Central, Nexus Snapshots) to be able to
      * download rewrite dependencies, so public repositories must be accessible for this to work.
-     * @see #forProjectDirectory(File, File, String, boolean)
      */
     public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile) throws IOException {
-        return forProjectDirectory(projectDir, buildFile, null, false);
-    }
-
-    /**
-     * <b></b>Warning: This API is likely to change over time without notice</b>
-     * Build an OpenRewriteModel for a project directory, using the default Gradle init script bundled within this jar.
-     * The included init script accesses public artifact repositories (Maven Central, Nexus Snapshots) to be able to
-     * download rewrite dependencies, so public repositories must be accessible for this to work.
-     * @see #forProjectDirectory(File, File, String, boolean)
-     */
-    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript) throws IOException {
-        return forProjectDirectory(projectDir, buildFile, initScript, false);
+        return forProjectDirectory(projectDir, buildFile, null);
     }
 
     /**
@@ -87,7 +75,7 @@ public class OpenRewriteModelBuilder {
      * }
      * </pre>
      */
-    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript, boolean offline) throws IOException {
+    public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript) throws IOException {
         DefaultGradleConnector connector = (DefaultGradleConnector)GradleConnector.newConnector();
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
@@ -103,11 +91,6 @@ public class OpenRewriteModelBuilder {
         arguments.add("--init-script");
         Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle").toAbsolutePath();
         arguments.add(init.toString());
-
-        if (offline) {
-            arguments.add("--offline");
-        }
-
         try (ProjectConnection connection = connector.connect()) {
             ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
             try {
