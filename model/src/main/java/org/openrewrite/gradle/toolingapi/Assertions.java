@@ -15,6 +15,7 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import io.micrometer.core.instrument.util.IOUtils;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.SourceFile;
@@ -31,6 +32,7 @@ import org.opentest4j.TestAbortedException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -174,6 +176,21 @@ public class Assertions {
 
     public static UncheckedConsumer<List<SourceFile>> withToolingApi() {
         return withToolingApi((GradleWrapper) null, null);
+    }
+
+    public static UncheckedConsumer<List<SourceFile>> withToolingApiUsingModulesCaching() {
+        try {
+            final String initScriptContents;
+            try (InputStream is = Assertions.class.getResourceAsStream("/init-with-modules-caching.gradle")) {
+                if (is == null) {
+                    throw new IllegalStateException("Expected to find init-with-modules-caching.gradle on the classpath");
+                }
+                initScriptContents = IOUtils.toString(is);
+            }
+            return withToolingApi((GradleWrapper) null, initScriptContents);
+        } catch (IOException e) {
+            throw new TestAbortedException("Failed to load Gradle Init script", e);
+        }
     }
 
     private static void deleteDirectory(File directoryToBeDeleted) {
