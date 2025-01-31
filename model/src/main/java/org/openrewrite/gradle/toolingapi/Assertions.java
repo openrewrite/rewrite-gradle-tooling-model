@@ -181,9 +181,9 @@ public class Assertions {
     public static UncheckedConsumer<List<SourceFile>> withToolingApiUsingModulesCaching() {
         try {
             final String initScriptContents;
-            try (InputStream is = Assertions.class.getResourceAsStream("/init-with-modules-caching.gradle")) {
+            try (InputStream is = Assertions.class.getResourceAsStream("/init-with-5-minutes-modules-caching.gradle")) {
                 if (is == null) {
-                    throw new IllegalStateException("Expected to find init-with-modules-caching.gradle on the classpath");
+                    throw new IllegalStateException("Expected to find init-with-5-minutes-modules-caching.gradle on the classpath");
                 }
                 initScriptContents = IOUtils.toString(is);
             }
