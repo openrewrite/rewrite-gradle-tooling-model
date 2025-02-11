@@ -22,8 +22,8 @@ initscript {
 
     configurations.all {
         resolutionStrategy {
-            cacheChangingModulesFor 0, 'seconds'
-            cacheDynamicVersionsFor 0, 'seconds'
+            cacheChangingModulesFor 5, 'minutes'
+            cacheDynamicVersionsFor 5, 'minutes'
         }
     }
 

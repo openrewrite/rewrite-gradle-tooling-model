@@ -76,7 +76,7 @@ public class OpenRewriteModelBuilder {
      * </pre>
      */
     public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript) throws IOException {
-        DefaultGradleConnector connector = (DefaultGradleConnector)GradleConnector.newConnector();
+        DefaultGradleConnector connector = (DefaultGradleConnector) GradleConnector.newConnector();
         if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
         } else {
@@ -94,7 +94,7 @@ public class OpenRewriteModelBuilder {
         try (ProjectConnection connection = connector.connect()) {
             ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
             try {
-                if(initScript == null) {
+                if (initScript == null) {
                     try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
                         if (is == null) {
                             throw new IllegalStateException("Expected to find init.gradle on the classpath");
