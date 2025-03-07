@@ -24,6 +24,7 @@ import org.openrewrite.gradle.marker.GradleProject;
 import org.openrewrite.gradle.marker.GradleSettings;
 import org.openrewrite.gradle.util.GradleWrapper;
 import org.openrewrite.groovy.tree.G;
+import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.OperatingSystemProvenance;
 import org.openrewrite.properties.tree.Properties;
 import org.openrewrite.test.UncheckedConsumer;
@@ -70,7 +71,17 @@ public class Assertions {
                 Path projectDir = tempDirectory;
                 try {
                     for (SourceFile sourceFile : sourceFiles) {
-                        if (sourceFile instanceof G.CompilationUnit) {
+                        if (sourceFile instanceof K.CompilationUnit) {
+                            K.CompilationUnit k = (K.CompilationUnit) sourceFile;
+                            if (k.getSourcePath().toString().endsWith(".gradle.kts")) {
+                                Path kotlinGradle = tempDirectory.resolve(k.getSourcePath());
+                                if (!tempDirectory.equals(kotlinGradle.getParent()) && tempDirectory.equals(kotlinGradle.getParent().getParent())) {
+                                    projectDir = kotlinGradle.getParent();
+                                }
+                                Files.createDirectories(kotlinGradle.getParent());
+                                Files.write(kotlinGradle, k.printAllAsBytes());
+                            }
+                        } else if (sourceFile instanceof G.CompilationUnit) {
                             G.CompilationUnit g = (G.CompilationUnit) sourceFile;
                             if (g.getSourcePath().toString().endsWith(".gradle")) {
                                 Path groovyGradle = tempDirectory.resolve(g.getSourcePath());
@@ -119,20 +130,20 @@ public class Assertions {
                     boolean freestandingScriptFound = false;
                     for (int i = 0; i < sourceFiles.size(); i++) {
                         SourceFile sourceFile = sourceFiles.get(i);
-                        if (sourceFile.getSourcePath().endsWith("settings.gradle")) {
+                        if (sourceFile.getSourcePath().endsWith("settings.gradle") || sourceFile.getSourcePath().endsWith("settings.gradle.kts")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
                             org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
                             if (rawSettings != null) {
                                 GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
                                 sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleSettings)));
                             }
-                        } else if (sourceFile.getSourcePath().endsWith("build.gradle")) {
+                        } else if (sourceFile.getSourcePath().endsWith("build.gradle") || sourceFile.getSourcePath().endsWith("build.gradle.kts")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
                             GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
                             allRepositories.addAll(gradleProject.getMavenRepositories());
                             allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
                             sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
-                        } else if (sourceFile.getSourcePath().toString().endsWith(".gradle")) {
+                        } else if (sourceFile.getSourcePath().toString().endsWith(".gradle") || sourceFile.getSourcePath().toString().endsWith(".gradle.kts")) {
                             freestandingScriptFound = true;
                         }
                     }
@@ -144,8 +155,8 @@ public class Assertions {
                                 emptyList(), emptyMap(), new GradleBuildscript(randomId(), new ArrayList<>(allBuildscriptRepositories), emptyMap()));
                         for (int i = 0; i < sourceFiles.size(); i++) {
                             SourceFile sourceFile = sourceFiles.get(i);
-                            if (sourceFile.getSourcePath().toString().endsWith(".gradle") && !sourceFile.getMarkers().findFirst(GradleProject.class).isPresent() &&
-                                !sourceFile.getMarkers().findFirst(GradleSettings.class).isPresent()) {
+                            if ((sourceFile.getSourcePath().toString().endsWith(".gradle") || sourceFile.getSourcePath().toString().endsWith(".gradle.kts")) &&
+                                    !sourceFile.getMarkers().findFirst(GradleProject.class).isPresent() && !sourceFile.getMarkers().findFirst(GradleSettings.class).isPresent()) {
                                 sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(freestandingScriptMarker)));
                             }
                         }
