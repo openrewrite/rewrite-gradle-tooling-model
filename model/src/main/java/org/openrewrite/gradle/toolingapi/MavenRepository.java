@@ -18,6 +18,7 @@ package org.openrewrite.gradle.toolingapi;
 import org.jspecify.annotations.Nullable;
 
 import java.net.URI;
+import java.time.Duration;
 
 public interface MavenRepository {
 
@@ -44,6 +45,9 @@ public interface MavenRepository {
     String getPassword();
 
     @Nullable
+    Duration getTimeout();
+
+    @Nullable
     Boolean getDeriveMetadataIfMissing();
 
     static org.openrewrite.maven.tree.@Nullable MavenRepository toMarker(@Nullable MavenRepository mavenRepository) {
@@ -58,6 +62,7 @@ public interface MavenRepository {
                 mavenRepository.isKnownToExist(),
                 mavenRepository.getUsername(),
                 mavenRepository.getPassword(),
+                mavenRepository.getTimeout(),
                 mavenRepository.getDeriveMetadataIfMissing()
         );
     }
