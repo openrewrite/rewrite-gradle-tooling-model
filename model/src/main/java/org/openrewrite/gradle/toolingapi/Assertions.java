@@ -28,6 +28,7 @@ import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.OperatingSystemProvenance;
 import org.openrewrite.properties.tree.Properties;
 import org.openrewrite.test.UncheckedConsumer;
+import org.openrewrite.text.PlainText;
 import org.opentest4j.TestAbortedException;
 
 import java.io.File;
@@ -101,6 +102,16 @@ public class Assertions {
                                 Files.createDirectories(gradleProperties.getParent());
                                 Files.write(gradleProperties, f.printAllAsBytes());
                             }
+                        } else if (sourceFile instanceof PlainText) {
+                            PlainText plainText = (PlainText) sourceFile;
+                            if (plainText.getSourcePath().endsWith("gradle.lockfile") || plainText.getSourcePath().endsWith("buildscript-gradle.lockfile")) {
+                                Path lockfile = tempDirectory.resolve(plainText.getSourcePath());
+                                if (!tempDirectory.equals(lockfile.getParent()) && tempDirectory.equals(lockfile.getParent().getParent())) {
+                                    projectDir = lockfile.getParent();
+                                }
+                                Files.createDirectories(lockfile.getParent());
+                                Files.write(lockfile, plainText.printAllAsBytes());
+                            }
                         }
                     }
 
@@ -128,6 +139,7 @@ public class Assertions {
                     Set<org.openrewrite.maven.tree.MavenRepository> allRepositories = new LinkedHashSet<>();
                     Set<org.openrewrite.maven.tree.MavenRepository> allBuildscriptRepositories = new LinkedHashSet<>();
                     boolean freestandingScriptFound = false;
+                    GradleProject gradleProject = null;
                     for (int i = 0; i < sourceFiles.size(); i++) {
                         SourceFile sourceFile = sourceFiles.get(i);
                         if (sourceFile.getSourcePath().endsWith("settings.gradle") || sourceFile.getSourcePath().endsWith("settings.gradle.kts")) {
@@ -139,12 +151,20 @@ public class Assertions {
                             }
                         } else if (sourceFile.getSourcePath().endsWith("build.gradle") || sourceFile.getSourcePath().endsWith("build.gradle.kts")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
-                            GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
+                            gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
                             allRepositories.addAll(gradleProject.getMavenRepositories());
                             allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
                             sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
                         } else if (sourceFile.getSourcePath().toString().endsWith(".gradle") || sourceFile.getSourcePath().toString().endsWith(".gradle.kts")) {
                             freestandingScriptFound = true;
+                        }
+                    }
+                    if (gradleProject != null) {
+                        for (int i = 0; i < sourceFiles.size(); i++) {
+                            SourceFile sourceFile = sourceFiles.get(i);
+                            if (sourceFile.getSourcePath().endsWith("gradle.lockfile") || sourceFile.getSourcePath().endsWith("buildscript-gradle.lockfile")) {
+                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
+                            }
                         }
                     }
                     if (freestandingScriptFound) {
