@@ -17,6 +17,7 @@ package org.openrewrite.gradle.toolingapi;
 
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.PathUtils;
 import org.openrewrite.SourceFile;
 import org.openrewrite.gradle.UpdateGradleWrapper;
 import org.openrewrite.gradle.marker.GradleBuildscript;
@@ -39,10 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -139,7 +137,7 @@ public class Assertions {
                     Set<org.openrewrite.maven.tree.MavenRepository> allRepositories = new LinkedHashSet<>();
                     Set<org.openrewrite.maven.tree.MavenRepository> allBuildscriptRepositories = new LinkedHashSet<>();
                     boolean freestandingScriptFound = false;
-                    GradleProject gradleProject = null;
+                    Map<String, GradleProject> gradleProjects = new HashMap<>();
                     for (int i = 0; i < sourceFiles.size(); i++) {
                         SourceFile sourceFile = sourceFiles.get(i);
                         if (sourceFile.getSourcePath().endsWith("settings.gradle") || sourceFile.getSourcePath().endsWith("settings.gradle.kts")) {
@@ -151,19 +149,21 @@ public class Assertions {
                             }
                         } else if (sourceFile.getSourcePath().endsWith("build.gradle") || sourceFile.getSourcePath().endsWith("build.gradle.kts")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
-                            gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
+                            GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
                             allRepositories.addAll(gradleProject.getMavenRepositories());
                             allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
                             sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
+                            gradleProjects.put(getDirectory(sourceFile), org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject()));
                         } else if (sourceFile.getSourcePath().toString().endsWith(".gradle") || sourceFile.getSourcePath().toString().endsWith(".gradle.kts")) {
                             freestandingScriptFound = true;
                         }
                     }
-                    if (gradleProject != null) {
-                        for (int i = 0; i < sourceFiles.size(); i++) {
-                            SourceFile sourceFile = sourceFiles.get(i);
-                            if (sourceFile.getSourcePath().endsWith("gradle.lockfile") || sourceFile.getSourcePath().endsWith("buildscript-gradle.lockfile")) {
-                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(gradleProject)));
+                    for (int i = 0; i < sourceFiles.size(); i++) {
+                        SourceFile sourceFile = sourceFiles.get(i);
+                        if (sourceFile.getSourcePath().endsWith("gradle.lockfile") || sourceFile.getSourcePath().endsWith("buildscript-gradle.lockfile")) {
+                            GradleProject project = gradleProjects.get(getDirectory(sourceFile));
+                            if (project != null) {
+                                sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().add(project)));
                             }
                         }
                     }
@@ -216,5 +216,14 @@ public class Assertions {
         }
         //noinspection ResultOfMethodCallIgnored
         directoryToBeDeleted.delete();
+    }
+
+    private static String getDirectory(SourceFile file) {
+        Path sourcePath = file.getSourcePath();
+        Path parent = sourcePath.getParent();
+        if (parent != null) {
+            return parent.toString();
+        }
+        return "";
     }
 }
