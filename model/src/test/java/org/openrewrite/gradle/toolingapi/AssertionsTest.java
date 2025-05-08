@@ -21,9 +21,12 @@ import org.openrewrite.gradle.util.GradleWrapper;
 import org.openrewrite.test.RewriteTest;
 
 import java.net.URI;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.gradle.Assertions.buildGradle;
+import static org.openrewrite.gradle.Assertions.settingsGradle;
+import static org.openrewrite.test.SourceSpecs.text;
 
 class AssertionsTest implements RewriteTest {
 
@@ -69,24 +72,24 @@ class AssertionsTest implements RewriteTest {
                   maven{ url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
                   mavenCentral()
               }
-          
+
               configurations.all{
                   resolutionStrategy{
                       cacheChangingModulesFor 0, 'seconds'
                       cacheDynamicVersionsFor 0, 'seconds'
                   }
               }
-          
+
               dependencies{
                   classpath 'org.openrewrite.gradle.tooling:plugin:latest.integration'
                   classpath 'org.openrewrite:rewrite-maven:latest.integration'
               }
           }
-          
+
           allprojects{
               apply plugin: org.openrewrite.gradle.toolingapi.ToolingApiOpenRewriteModelPlugin
           }
-          
+
           """;
         GradleWrapper gradleWrapper = GradleWrapper.create(URI.create("https://services.gradle.org/distributions/gradle-8.6-bin.zip"), null);
         rewriteRun(
@@ -100,6 +103,88 @@ class AssertionsTest implements RewriteTest {
               """,
             spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
           )
+        );
+    }
+
+    @Test
+    void withLockFile() {
+        rewriteRun(
+                spec -> spec.beforeRecipe(Assertions.withToolingApi()),
+                //language=groovy
+                buildGradle(
+                        """
+                          plugins {
+                              id 'java'
+                          }
+                          """,
+                        spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+                ), text(
+                         """
+                          # This is a Gradle generated file for dependency locking.
+                          # Manual edits can break the build and are not advised.
+                          # This file is expected to be part of source control.
+                          empty=
+                          """,
+                        spec -> spec
+                                .path("gradle.lockfile")
+                                .afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+                )
+        );
+    }
+
+    @Test
+    void multimoduleLockFiles() {
+        rewriteRun(
+                spec -> spec.beforeRecipe(Assertions.withToolingApi()),
+                //language=groovy
+                settingsGradle("""
+                        rootProject.name = 'test'
+                        include 'subproject1', 'subproject2'
+                        """),
+                buildGradle(
+                        """
+                          plugins {
+                              id 'java'
+                          }
+                          """,
+                        spec -> spec
+                                .path("build.gradle")
+                                .afterRecipe(cu -> {
+                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                                    assertThat(gp).isPresent();
+                                    assertThat(gp.get().getPath()).isEqualTo(":");
+                                })
+                ), text(
+                        """
+                         # This is a Gradle generated file for dependency locking.
+                         # Manual edits can break the build and are not advised.
+                         # This file is expected to be part of source control.
+                         empty=
+                         """,
+                        spec -> spec
+                                .path("subproject1/gradle.lockfile")
+                                .afterRecipe(cu -> {
+                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                                    assertThat(gp).isPresent();
+                                    assertThat(gp.get().getPath()).isEqualTo(":subproject1");
+                                })
+                ), text(
+                        """
+                         # This is a Gradle generated file for dependency locking.
+                         # Manual edits can break the build and are not advised.
+                         # This file is expected to be part of source control.
+                         empty=
+                         """,
+                        spec -> spec
+                                .path("subproject2/gradle.lockfile")
+                                .afterRecipe(cu -> {
+                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                                    assertThat(gp).isPresent();
+                                    assertThat(gp.get().getPath()).isEqualTo(":subproject2");
+                                })
+                ),
+                buildGradle("", spec -> spec.path("subproject1/build.gradle")),
+                buildGradle("", spec -> spec.path("subproject2/build.gradle"))
         );
     }
 }
