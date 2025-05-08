@@ -21,6 +21,7 @@ import org.openrewrite.gradle.util.GradleWrapper;
 import org.openrewrite.test.RewriteTest;
 
 import java.net.URI;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.gradle.Assertions.buildGradle;
@@ -148,7 +149,11 @@ class AssertionsTest implements RewriteTest {
                           """,
                         spec -> spec
                                 .path("build.gradle")
-                                .afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+                                .afterRecipe(cu -> {
+                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                                    assertThat(gp).isPresent();
+                                    assertThat(gp.get().getPath()).isEqualTo(":");
+                                })
                 ), text(
                         """
                          # This is a Gradle generated file for dependency locking.
@@ -158,7 +163,11 @@ class AssertionsTest implements RewriteTest {
                          """,
                         spec -> spec
                                 .path("subproject1/gradle.lockfile")
-                                .afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+                                .afterRecipe(cu -> {
+                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                                    assertThat(gp).isPresent();
+                                    assertThat(gp.get().getPath()).isEqualTo(":subproject1");
+                                })
                 ), text(
                         """
                          # This is a Gradle generated file for dependency locking.
@@ -168,7 +177,11 @@ class AssertionsTest implements RewriteTest {
                          """,
                         spec -> spec
                                 .path("subproject2/gradle.lockfile")
-                                .afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+                                .afterRecipe(cu -> {
+                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                                    assertThat(gp).isPresent();
+                                    assertThat(gp.get().getPath()).isEqualTo(":subproject2");
+                                })
                 ),
                 buildGradle("", spec -> spec.path("subproject1/build.gradle")),
                 buildGradle("", spec -> spec.path("subproject2/build.gradle"))
