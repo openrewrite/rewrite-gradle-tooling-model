@@ -107,6 +107,33 @@ class AssertionsTest implements RewriteTest {
     }
 
     @Test
+    void multipleToolingApiCallsAddSingleMarker() {
+        rewriteRun(
+                spec -> spec.beforeRecipe(Assertions.withToolingApi())
+                        .beforeRecipe(Assertions.withToolingApi()),
+                //language=groovy
+                buildGradle(
+                        """
+                          plugins {
+                              id 'java'
+                          }
+                          """,
+                        spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findAll(GradleProject.class)).hasSize(1))
+                ), text(
+                        """
+                         # This is a Gradle generated file for dependency locking.
+                         # Manual edits can break the build and are not advised.
+                         # This file is expected to be part of source control.
+                         empty=
+                         """,
+                        spec -> spec
+                                .path("gradle.lockfile")
+                                .afterRecipe(cu -> assertThat(cu.getMarkers().findAll(GradleProject.class)).hasSize(1))
+                )
+        );
+    }
+
+    @Test
     void withLockFile() {
         rewriteRun(
                 spec -> spec.beforeRecipe(Assertions.withToolingApi()),
