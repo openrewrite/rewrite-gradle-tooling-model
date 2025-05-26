@@ -164,10 +164,12 @@ class AssertionsTest implements RewriteTest {
         rewriteRun(
                 spec -> spec.beforeRecipe(Assertions.withToolingApi()),
                 //language=groovy
-                settingsGradle("""
+                settingsGradle(
+                """
                         rootProject.name = 'test'
                         include 'subproject1', 'subproject2'
-                        """),
+                        """
+                ),
                 buildGradle(
                         """
                           plugins {
