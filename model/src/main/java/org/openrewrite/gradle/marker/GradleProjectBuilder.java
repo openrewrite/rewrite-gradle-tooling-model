@@ -121,6 +121,18 @@ public final class GradleProjectBuilder {
         return null;
     }
 
+    private static boolean isCanBeDeclared(Configuration configuration) {
+        try {
+            Method isCanBeDeclared = Configuration.class.getMethod("isCanBeDeclared");
+            return (boolean) isCanBeDeclared.invoke(configuration);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // On old versions of gradle that don't have this method will fall back on a heuristic
+            // Commonly not-for-declaration configurations include "compileClasspath", "TestRuntimeClasspath"
+            // But _not_ included is the buildscript "classpath" configuration
+            return !configuration.getName().endsWith("Classpath");
+        }
+    }
+
     private static final Map<GroupArtifact, GroupArtifact> groupArtifactCache = new ConcurrentHashMap<>();
 
     private static GroupArtifact groupArtifact(org.openrewrite.maven.tree.Dependency dep) {
@@ -198,11 +210,11 @@ public final class GradleProjectBuilder {
                     resolved = emptyList();
                 }
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), requested, resolved, exceptionType, exceptionMessage);
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), requested, resolved, exceptionType, exceptionMessage);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
                 results.put(conf.getName(), dc);
             }
         }

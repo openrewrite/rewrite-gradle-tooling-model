@@ -34,6 +34,8 @@ public interface GradleDependencyConfiguration {
 
     boolean isCanBeResolved();
 
+    boolean isCanBeDeclared();
+
     List<GradleDependencyConfiguration> getExtendsFrom();
 
     List<Dependency> getRequested();
@@ -49,6 +51,7 @@ public interface GradleDependencyConfiguration {
                     config.isTransitive(),
                     config.isCanBeResolved(),
                     config.isCanBeConsumed(),
+                    config.isCanBeDeclared(),
                     emptyList(),
                     config.getRequested().stream().map(org.openrewrite.gradle.toolingapi.Dependency::toMarkers)
                             .collect(Collectors.toList()),
