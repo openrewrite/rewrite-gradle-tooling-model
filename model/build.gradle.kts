@@ -17,6 +17,7 @@ dependencies {
     compileOnly("org.openrewrite:rewrite-groovy:latest.integration")
     compileOnly("org.openrewrite:rewrite-kotlin:latest.integration")
     compileOnly("org.openrewrite:rewrite-properties:latest.integration")
+    compileOnly("org.openrewrite:rewrite-toml:latest.integration")
 
     testImplementation("org.openrewrite:rewrite-test:latest.integration")
     testImplementation("org.openrewrite:rewrite-gradle:latest.integration") {
