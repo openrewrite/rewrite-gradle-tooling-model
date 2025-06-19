@@ -29,6 +29,7 @@ import org.openrewrite.marker.OperatingSystemProvenance;
 import org.openrewrite.properties.tree.Properties;
 import org.openrewrite.test.UncheckedConsumer;
 import org.openrewrite.text.PlainText;
+import org.openrewrite.toml.tree.Toml;
 import org.opentest4j.TestAbortedException;
 
 import java.io.File;
@@ -98,6 +99,16 @@ public class Assertions {
                                 }
                                 Files.createDirectories(gradleProperties.getParent());
                                 Files.write(gradleProperties, f.printAllAsBytes());
+                            }
+                        } else if (sourceFile instanceof Toml.Document) {
+                            Toml.Document d = (Toml.Document) sourceFile;
+                            if (d.getSourcePath().startsWith("gradle/") && d.getSourcePath().toString().endsWith(".versions.toml")) {
+                                Path versionCatalog = tempDirectory.resolve(d.getSourcePath());
+                                if (!tempDirectory.equals(versionCatalog.getParent()) && tempDirectory.equals(versionCatalog.getParent().getParent())) {
+                                    projectDir = versionCatalog.getParent();
+                                }
+                                Files.createDirectories(versionCatalog.getParent());
+                                Files.write(versionCatalog, d.printAllAsBytes());
                             }
                         } else if (sourceFile instanceof PlainText) {
                             PlainText plainText = (PlainText) sourceFile;
