@@ -192,7 +192,7 @@ public class Assertions {
     public static UncheckedConsumer<List<SourceFile>> withToolingApi(@Nullable String version, @Nullable String distribution) {
         GradleWrapper gradleWrapper = null;
         if (version != null) {
-            gradleWrapper = GradleWrapper.create(distribution, version, null, new InMemoryExecutionContext());
+            gradleWrapper = GradleWrapper.create(distribution, version, new InMemoryExecutionContext());
         }
         return withToolingApi(gradleWrapper);
     }
