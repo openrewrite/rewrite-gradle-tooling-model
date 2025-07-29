@@ -25,7 +25,7 @@ dependencies {
     }
     testImplementation("org.openrewrite:rewrite-core:latest.integration")
     testImplementation("org.openrewrite:rewrite-maven:latest.integration")
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:latest.release"))
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:2.17.+"))
     testImplementation("com.fasterxml.jackson.core:jackson-core")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile")
