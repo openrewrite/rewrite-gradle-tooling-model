@@ -82,7 +82,11 @@ public class OpenRewriteModelBuilder {
         } else {
             connector.useGradleVersion("8.12");
         }
-        connector.forProjectDirectory(projectDir);
+        connector
+                // Uncomment to hit breakpoints inside OpenRewriteModelBuilder in unit tests
+                // Leave commented out in production because it is an internal/undocumented Gradle API
+                //.embedded(true)
+                .forProjectDirectory(projectDir);
         List<String> arguments = new ArrayList<>();
         if (buildFile != null && buildFile.exists()) {
             arguments.add("-b");

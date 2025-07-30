@@ -109,111 +109,111 @@ class AssertionsTest implements RewriteTest {
     @Test
     void multipleToolingApiCallsAddSingleMarker() {
         rewriteRun(
-                spec -> spec.beforeRecipe(Assertions.withToolingApi())
-                        .beforeRecipe(Assertions.withToolingApi()),
-                //language=groovy
-                buildGradle(
-                        """
-                          plugins {
-                              id 'java'
-                          }
-                          """,
-                        spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findAll(GradleProject.class)).hasSize(1))
-                ), text(
-                        """
-                         # This is a Gradle generated file for dependency locking.
-                         # Manual edits can break the build and are not advised.
-                         # This file is expected to be part of source control.
-                         empty=
-                         """,
-                        spec -> spec
-                                .path("gradle.lockfile")
-                                .afterRecipe(cu -> assertThat(cu.getMarkers().findAll(GradleProject.class)).hasSize(1))
-                )
+          spec -> spec.beforeRecipe(Assertions.withToolingApi())
+            .beforeRecipe(Assertions.withToolingApi()),
+          //language=groovy
+          buildGradle(
+            """
+              plugins {
+                  id 'java'
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findAll(GradleProject.class)).hasSize(1))
+          ), text(
+            """
+              # This is a Gradle generated file for dependency locking.
+              # Manual edits can break the build and are not advised.
+              # This file is expected to be part of source control.
+              empty=
+              """,
+            spec -> spec
+              .path("gradle.lockfile")
+              .afterRecipe(cu -> assertThat(cu.getMarkers().findAll(GradleProject.class)).hasSize(1))
+          )
         );
     }
 
     @Test
     void withLockFile() {
         rewriteRun(
-                spec -> spec.beforeRecipe(Assertions.withToolingApi()),
-                //language=groovy
-                buildGradle(
-                        """
-                          plugins {
-                              id 'java'
-                          }
-                          """,
-                        spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
-                ), text(
-                         """
-                          # This is a Gradle generated file for dependency locking.
-                          # Manual edits can break the build and are not advised.
-                          # This file is expected to be part of source control.
-                          empty=
-                          """,
-                        spec -> spec
-                                .path("gradle.lockfile")
-                                .afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
-                )
+          spec -> spec.beforeRecipe(Assertions.withToolingApi()),
+          //language=groovy
+          buildGradle(
+            """
+              plugins {
+                  id 'java'
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+          ), text(
+            """
+              # This is a Gradle generated file for dependency locking.
+              # Manual edits can break the build and are not advised.
+              # This file is expected to be part of source control.
+              empty=
+              """,
+            spec -> spec
+              .path("gradle.lockfile")
+              .afterRecipe(cu -> assertThat(cu.getMarkers().findFirst(GradleProject.class)).isPresent())
+          )
         );
     }
 
     @Test
     void multimoduleLockFiles() {
         rewriteRun(
-                spec -> spec.beforeRecipe(Assertions.withToolingApi()),
-                //language=groovy
-                settingsGradle(
-                """
-                        rootProject.name = 'test'
-                        include 'subproject1', 'subproject2'
-                        """
-                ),
-                buildGradle(
-                        """
-                          plugins {
-                              id 'java'
-                          }
-                          """,
-                        spec -> spec
-                                .path("build.gradle")
-                                .afterRecipe(cu -> {
-                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
-                                    assertThat(gp).isPresent();
-                                    assertThat(gp.get().getPath()).isEqualTo(":");
-                                })
-                ), text(
-                        """
-                         # This is a Gradle generated file for dependency locking.
-                         # Manual edits can break the build and are not advised.
-                         # This file is expected to be part of source control.
-                         empty=
-                         """,
-                        spec -> spec
-                                .path("subproject1/gradle.lockfile")
-                                .afterRecipe(cu -> {
-                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
-                                    assertThat(gp).isPresent();
-                                    assertThat(gp.get().getPath()).isEqualTo(":subproject1");
-                                })
-                ), text(
-                        """
-                         # This is a Gradle generated file for dependency locking.
-                         # Manual edits can break the build and are not advised.
-                         # This file is expected to be part of source control.
-                         empty=
-                         """,
-                        spec -> spec
-                                .path("subproject2/gradle.lockfile")
-                                .afterRecipe(cu -> {
-                                    Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
-                                    assertThat(gp).isPresent();
-                                    assertThat(gp.get().getPath()).isEqualTo(":subproject2");
-                                })
-                ),
-                buildGradle("", spec -> spec.path("subproject1/build.gradle")),
-                buildGradle("", spec -> spec.path("subproject2/build.gradle"))
+          spec -> spec.beforeRecipe(Assertions.withToolingApi()),
+          //language=groovy
+          settingsGradle(
+            """
+              rootProject.name = 'test'
+              include 'subproject1', 'subproject2'
+              """
+          ),
+          buildGradle(
+            """
+              plugins {
+                  id 'java'
+              }
+              """,
+            spec -> spec
+              .path("build.gradle")
+              .afterRecipe(cu -> {
+                  Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                  assertThat(gp).isPresent();
+                  assertThat(gp.get().getPath()).isEqualTo(":");
+              })
+          ), text(
+            """
+              # This is a Gradle generated file for dependency locking.
+              # Manual edits can break the build and are not advised.
+              # This file is expected to be part of source control.
+              empty=
+              """,
+            spec -> spec
+              .path("subproject1/gradle.lockfile")
+              .afterRecipe(cu -> {
+                  Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                  assertThat(gp).isPresent();
+                  assertThat(gp.get().getPath()).isEqualTo(":subproject1");
+              })
+          ), text(
+            """
+              # This is a Gradle generated file for dependency locking.
+              # Manual edits can break the build and are not advised.
+              # This file is expected to be part of source control.
+              empty=
+              """,
+            spec -> spec
+              .path("subproject2/gradle.lockfile")
+              .afterRecipe(cu -> {
+                  Optional<GradleProject> gp = cu.getMarkers().findFirst(GradleProject.class);
+                  assertThat(gp).isPresent();
+                  assertThat(gp.get().getPath()).isEqualTo(":subproject2");
+              })
+          ),
+          buildGradle("", spec -> spec.path("subproject1/build.gradle")),
+          buildGradle("", spec -> spec.path("subproject2/build.gradle"))
         );
     }
 }

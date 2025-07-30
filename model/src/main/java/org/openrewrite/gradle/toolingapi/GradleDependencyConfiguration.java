@@ -40,7 +40,7 @@ public interface GradleDependencyConfiguration {
 
     List<Dependency> getRequested();
 
-    List<ResolvedDependency> getResolved();
+    List<ResolvedDependency> getDirectResolved();
 
     static Map<String, org.openrewrite.gradle.marker.GradleDependencyConfiguration> toMarkers(Collection<GradleDependencyConfiguration> configurations) {
         Map<String, org.openrewrite.gradle.marker.GradleDependencyConfiguration> results = new HashMap<>();
@@ -55,7 +55,7 @@ public interface GradleDependencyConfiguration {
                     emptyList(),
                     config.getRequested().stream().map(org.openrewrite.gradle.toolingapi.Dependency::toMarkers)
                             .collect(Collectors.toList()),
-                    org.openrewrite.gradle.toolingapi.ResolvedDependency.toMarker(config.getResolved()),
+                    org.openrewrite.gradle.toolingapi.ResolvedDependency.toMarker(config.getDirectResolved()),
                     null,
                     null
             ));
