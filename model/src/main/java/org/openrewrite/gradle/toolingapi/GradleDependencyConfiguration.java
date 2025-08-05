@@ -19,9 +19,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 
 public interface GradleDependencyConfiguration {
     String getName();
@@ -54,7 +54,7 @@ public interface GradleDependencyConfiguration {
                     config.isCanBeDeclared(),
                     emptyList(),
                     config.getRequested().stream().map(org.openrewrite.gradle.toolingapi.Dependency::toMarkers)
-                            .collect(Collectors.toList()),
+                            .collect(toList()),
                     org.openrewrite.gradle.toolingapi.ResolvedDependency.toMarker(config.getDirectResolved()),
                     null,
                     null
@@ -70,7 +70,7 @@ public interface GradleDependencyConfiguration {
             if (dc != null) {
                 List<org.openrewrite.gradle.marker.GradleDependencyConfiguration> extendsFrom = conf.getExtendsFrom().stream()
                         .map(it -> results.get(it.getName()))
-                        .collect(Collectors.toList());
+                        .collect(toList());
                 dc.unsafeSetExtendsFrom(extendsFrom);
             }
         }

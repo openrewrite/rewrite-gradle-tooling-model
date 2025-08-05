@@ -18,7 +18,8 @@ package org.openrewrite.gradle.toolingapi;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 public interface Dependency {
     GroupArtifactVersion getGav();
@@ -44,7 +45,7 @@ public interface Dependency {
                 .type(dep.getType())
                 .exclusions(dep.getExclusions().stream()
                         .map(ga -> new org.openrewrite.maven.tree.GroupArtifact(ga.getGroupId(), ga.getArtifactId()))
-                        .collect(Collectors.toList()))
+                        .collect(toList()))
                 .optional(dep.getOptional())
                 .build();
     }

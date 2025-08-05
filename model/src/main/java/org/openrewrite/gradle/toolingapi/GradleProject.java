@@ -18,7 +18,8 @@ package org.openrewrite.gradle.toolingapi;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 public interface GradleProject {
     String getGroup();
@@ -48,19 +49,19 @@ public interface GradleProject {
                 project.getPath(),
                 project.getPlugins().stream()
                         .map(GradlePluginDescriptor::toMarker)
-                        .collect(Collectors.toList()),
+                        .collect(toList()),
                 project.getMavenRepositories().stream()
                         .map(MavenRepository::toMarker)
-                        .collect(Collectors.toList()),
+                        .collect(toList()),
                 project.getMavenPluginRepositories().stream()
                         .map(MavenRepository::toMarker)
-                        .collect(Collectors.toList()),
+                        .collect(toList()),
                 GradleDependencyConfiguration.toMarkers(project.getNameToConfiguration().values()),
                 new org.openrewrite.gradle.marker.GradleBuildscript(
                         UUID.randomUUID(),
                         project.getBuildscript().getMavenRepositories().stream()
                                 .map(MavenRepository::toMarker)
-                                .collect(Collectors.toList()),
+                                .collect(toList()),
                         GradleDependencyConfiguration.toMarkers(project.getBuildscript().getNameToConfiguration().values())
                 )
         );
