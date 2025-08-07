@@ -54,7 +54,7 @@ public final class GradleSettingsBuilder {
                 randomId(),
                 null,
                 GradleProjectBuilder.pluginDescriptors(settings.getPluginManager()),
-                featurePreviews((DefaultSettings)settings),
+                featurePreviews((DefaultSettings) settings),
                 new GradleBuildscript(
                         randomId(),
                         new ArrayList<>(pluginRepositories),
@@ -100,7 +100,7 @@ public final class GradleSettingsBuilder {
         try {
             Method services = settings.getClass().getDeclaredMethod("getServices");
             services.setAccessible(true);
-            ServiceRegistry serviceRegistry = (ServiceRegistry)services.invoke(settings);
+            ServiceRegistry serviceRegistry = (ServiceRegistry) services.invoke(settings);
             return serviceRegistry.get(serviceType);
         } catch (UnknownServiceException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             return null;
