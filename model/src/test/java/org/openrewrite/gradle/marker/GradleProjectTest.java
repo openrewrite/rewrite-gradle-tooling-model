@@ -37,7 +37,10 @@ import org.openrewrite.gradle.toolingapi.OpenRewriteModel;
 import org.openrewrite.gradle.toolingapi.OpenRewriteModelBuilder;
 import org.openrewrite.maven.tree.ResolvedDependency;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,7 +85,7 @@ class GradleProjectTest {
                 Files.write(dir.resolve("build.gradle"), is.readAllBytes());
             }
 
-            try (InputStream is =  new ByteArrayInputStream(settingsGradle.getBytes(StandardCharsets.UTF_8))) {
+            try (InputStream is = new ByteArrayInputStream(settingsGradle.getBytes(StandardCharsets.UTF_8))) {
                 Files.write(dir.resolve("settings.gradle"), is.readAllBytes());
             }
 
@@ -203,7 +206,7 @@ class GradleProjectTest {
                 Files.write(dir.resolve("build.gradle"), is.readAllBytes());
             }
 
-            try (InputStream is =  new ByteArrayInputStream(settingsGradle.getBytes(StandardCharsets.UTF_8))) {
+            try (InputStream is = new ByteArrayInputStream(settingsGradle.getBytes(StandardCharsets.UTF_8))) {
                 Files.write(dir.resolve("settings.gradle"), is.readAllBytes());
             }
 
