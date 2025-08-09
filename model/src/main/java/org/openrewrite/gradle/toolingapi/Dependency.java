@@ -16,8 +16,10 @@
 package org.openrewrite.gradle.toolingapi;
 
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.maven.attributes.Attribute;
 
 import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 
@@ -37,6 +39,8 @@ public interface Dependency {
     @Nullable
     String getOptional();
 
+    Map<String, ? extends Attribute> getAttributes();
+
     static org.openrewrite.maven.tree.Dependency toMarkers(org.openrewrite.gradle.toolingapi.Dependency dep) {
         return org.openrewrite.maven.tree.Dependency.builder()
                 .gav(new org.openrewrite.maven.tree.GroupArtifactVersion(dep.getGav().getGroupId(),
@@ -47,6 +51,7 @@ public interface Dependency {
                         .map(ga -> new org.openrewrite.maven.tree.GroupArtifact(ga.getGroupId(), ga.getArtifactId()))
                         .collect(toList()))
                 .optional(dep.getOptional())
+                .attributes(dep.getAttributes())
                 .build();
     }
 }

@@ -1,5 +1,5 @@
 plugins {
-    id("org.openrewrite.build.root") version("latest.release")
+    id("org.openrewrite.build.root") version("1.131.0-dev.36.uncommitted+8c96195")
 }
 
 allprojects {

@@ -15,12 +15,20 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import org.openrewrite.maven.attributes.Attribute;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 
 public interface GradleDependencyConfiguration {
@@ -42,6 +50,10 @@ public interface GradleDependencyConfiguration {
 
     List<ResolvedDependency> getDirectResolved();
 
+    List<GradleDependencyConstraint> getConstraints();
+
+    Map<String, ? extends Attribute> getAttributes();
+
     static Map<String, org.openrewrite.gradle.marker.GradleDependencyConfiguration> toMarkers(Collection<GradleDependencyConfiguration> configurations) {
         Map<String, org.openrewrite.gradle.marker.GradleDependencyConfiguration> results = new HashMap<>();
         for (org.openrewrite.gradle.toolingapi.GradleDependencyConfiguration config : configurations) {
@@ -57,8 +69,10 @@ public interface GradleDependencyConfiguration {
                             .collect(toList()),
                     org.openrewrite.gradle.toolingapi.ResolvedDependency.toMarker(config.getDirectResolved()),
                     null,
-                    null
-            ));
+                    null,
+                    org.openrewrite.gradle.toolingapi.GradleDependencyConstraint.toMarker(config.getConstraints()),
+                    emptyMap())
+            );
         }
 
         // Record the relationships between dependency configurations

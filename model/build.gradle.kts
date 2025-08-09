@@ -1,5 +1,6 @@
 plugins {
     id("org.openrewrite.build.language-library")
+    id("org.openrewrite.build.java8-text-blocks")
 }
 
 dependencies {
@@ -29,4 +30,31 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-core")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile")
+}
+
+tasks.named<JavaCompile>("compileJava").configure {
+    options.release.set(8)
+}
+
+configurations.all {
+    resolutionStrategy {
+        eachDependency {
+            if (requested.group == "org.assertj" && requested.name == "assertj-core") {
+                useVersion("3.+")
+            }
+        }
+    }
+}
+
+val testGradle4 = tasks.register<Test>("testGradle4") {
+    systemProperty("org.openrewrite.test.gradleVersion", "4.10")
+    systemProperty("jarLocationForTest", tasks.named<Jar>("jar").get().archiveFile.get().asFile.absolutePath)
+    // Gradle 4 predates support for Java 11
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    })
+}
+
+tasks.named("check").configure {
+    dependsOn(testGradle4)
 }
