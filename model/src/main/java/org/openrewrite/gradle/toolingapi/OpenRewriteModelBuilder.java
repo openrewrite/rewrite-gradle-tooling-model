@@ -98,7 +98,7 @@ public class OpenRewriteModelBuilder {
         Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle").toAbsolutePath();
         arguments.add(init.toString());
         try (ProjectConnection connection = connector.connect()) {
-            ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
+            ModelBuilder<OpenRewriteModelProxy> customModelBuilder = connection.model(OpenRewriteModelProxy.class);
             try {
                 if (initScript == null) {
                     try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
@@ -111,7 +111,7 @@ public class OpenRewriteModelBuilder {
                     Files.write(init, initScript.getBytes());
                 }
                 customModelBuilder.withArguments(arguments);
-                return customModelBuilder.get();
+                return OpenRewriteModel.from(customModelBuilder.get());
             } finally {
                 try {
                     Files.delete(init);

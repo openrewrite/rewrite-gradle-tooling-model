@@ -34,6 +34,7 @@ dependencies {
 
 tasks.named<JavaCompile>("compileJava").configure {
     options.release.set(8)
+    options.compilerArgs.add("-parameters")
 }
 
 configurations.all {

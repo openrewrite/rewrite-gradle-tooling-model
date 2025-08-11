@@ -15,12 +15,34 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.RecipeSerializer;
 
-public interface OpenRewriteModel {
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
-    GradleProject gradleProject();
+@Value
+public class OpenRewriteModel {
 
-    @Nullable
-    GradleSettings gradleSettings();
+    private static final ObjectMapper mapper = new RecipeSerializer().getMapper();
+
+    org.openrewrite.gradle.marker.GradleProject gradleProject;
+
+
+    org.openrewrite.gradle.marker. @Nullable GradleSettings gradleSettings;
+
+    public static OpenRewriteModel from(OpenRewriteModelProxy proxy) {
+        try {
+            org.openrewrite.gradle.marker.GradleProject project = mapper.readValue(proxy.getGradleProjectBytes(), org.openrewrite.gradle.marker.GradleProject.class);
+            org.openrewrite.gradle.marker.GradleSettings settings = proxy.getGradleSettingsBytes() == null ? null : mapper.readValue(proxy.getGradleSettingsBytes(), org.openrewrite.gradle.marker.GradleSettings.class);
+            return new OpenRewriteModel(project, settings);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 }

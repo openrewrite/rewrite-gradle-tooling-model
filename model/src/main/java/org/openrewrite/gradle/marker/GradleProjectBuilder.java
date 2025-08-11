@@ -21,6 +21,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.HasAttributes;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.plugins.PluginManagerInternal;
@@ -29,7 +30,6 @@ import org.gradle.invocation.DefaultGradle;
 import org.gradle.plugin.use.PluginId;
 import org.gradle.util.GradleVersion;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.maven.attributes.Attribute;
 import org.openrewrite.maven.tree.*;
 
 import java.lang.reflect.InvocationTargetException;
@@ -37,7 +37,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -271,23 +270,20 @@ public final class GradleProjectBuilder {
         );
     }
 
-    private static Map<String, Attribute> attributes(Object maybeAttributed) {
+    private static Map<String, String> attributes(Object maybeAttributed) {
         if (!(maybeAttributed instanceof HasAttributes)) {
             return emptyMap();
         }
+        Map<String, String> result = new HashMap<>();
         HasAttributes attributed = (HasAttributes) maybeAttributed;
-        return Stream.of(
-                        org.openrewrite.gradle.attributes.Category.from(attributed),
-                        org.openrewrite.gradle.attributes.ProjectAttribute.from(attributed),
-                        org.openrewrite.gradle.attributes.Bundling.from(attributed),
-                        org.openrewrite.gradle.attributes.DocsType.from(attributed),
-                        org.openrewrite.gradle.attributes.LibraryElements.from(attributed),
-                        org.openrewrite.gradle.attributes.Usage.from(attributed),
-                        org.openrewrite.gradle.attributes.VerificationType.from(attributed),
-                        org.openrewrite.gradle.attributes.java.TargetJvmEnvironment.from(attributed),
-                        org.openrewrite.gradle.attributes.java.TargetJvmVersion.from(attributed)
-                ).filter(Objects::nonNull)
-                .collect(Collectors.toMap(it -> it.getClass().getName(), it -> it));
+        for (Attribute<?> attribute : attributed.getAttributes().keySet()) {
+            Object attr = attributed.getAttributes().getAttribute(attribute);
+            result.put(attribute.getName(), String.valueOf(attr));
+        }
+        if (maybeAttributed instanceof ProjectDependency) {
+            result.put("org.gradle.api.artifacts.ProjectDependency", ((ProjectDependency) maybeAttributed).getPath());
+        }
+        return result;
     }
 
     private static List<org.openrewrite.maven.tree.ResolvedDependency> resolved(
