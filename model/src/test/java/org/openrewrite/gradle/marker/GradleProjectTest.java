@@ -113,7 +113,7 @@ class GradleProjectTest {
         }
 
         @Test
-        void serializable() throws IOException {
+        void serializable() throws Exception {
             ObjectMapper m = buildMapper();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             m.writeValue(baos, gradleProject);
