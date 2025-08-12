@@ -47,6 +47,7 @@ class GradleProjectTest {
     public static GradleVersion gradleVersion = System.getProperty("org.openrewrite.test.gradleVersion") == null ?
       GradleVersion.current() :
       GradleVersion.version(System.getProperty("org.openrewrite.test.gradleVersion"));
+
     public static boolean gradleOlderThan8() {
         return gradleVersion.compareTo(GradleVersion.version("8.0")) < 0;
     }
@@ -176,6 +177,13 @@ class GradleProjectTest {
             gradleProject = model.getGradleProject();
         }
 
+
+        @Test
+        void sameConfigurationIsReferentiallySame() {
+            GradleDependencyConfiguration implementation = requireNonNull(gradleProject.getConfiguration("implementation"));
+            GradleDependencyConfiguration runtimeClasspath = requireNonNull(gradleProject.getConfiguration("runtimeClasspath"));
+            assertThat(runtimeClasspath.getExtendsFrom()).anyMatch(it -> it == implementation);
+        }
 
         @Test
         void transitiveDependencies() {
