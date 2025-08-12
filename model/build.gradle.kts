@@ -1,6 +1,19 @@
 plugins {
-    id("org.openrewrite.build.language-library")
+    id("java-library")
+    id("org.openrewrite.build.metadata")
+    id("org.openrewrite.build.publish")
     id("org.openrewrite.build.java8-text-blocks")
+}
+
+// It is intentional that these are declared explicitly
+// org.openrewrite.gradle.RewriteDependencyRepositoriesPlugin in rewrite-build-gradle-plugin disallows snapshot repositories during release builds
+// Uniquely amongst our repositories, this repository is supposed to be able to release built against rewrite-core snapshots
+repositories {
+    mavenLocal()
+    maven {
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+    }
+    mavenCentral()
 }
 
 dependencies {
@@ -20,6 +33,10 @@ dependencies {
     compileOnly("org.openrewrite:rewrite-properties:latest.integration")
     compileOnly("org.openrewrite:rewrite-toml:latest.integration")
 
+    compileOnly("org.projectlombok:lombok:latest.release")
+    testCompileOnly("org.projectlombok:lombok:latest.release")
+    annotationProcessor("org.projectlombok:lombok:latest.release")
+    testAnnotationProcessor("org.projectlombok:lombok:latest.release")
     testImplementation("org.openrewrite:rewrite-test:latest.integration")
     testImplementation("org.openrewrite:rewrite-gradle:latest.integration") {
         exclude(group = "org.openrewrite.gradle.tooling")
@@ -30,21 +47,14 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-core")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile")
+    // last version which supports java 8, which testGradle4 runs on
+    testImplementation("org.assertj:assertj-core:3.+")
 }
 
 tasks.named<JavaCompile>("compileJava").configure {
     options.release.set(8)
     options.compilerArgs.add("-parameters")
-}
-
-configurations.all {
-    resolutionStrategy {
-        eachDependency {
-            if (requested.group == "org.assertj" && requested.name == "assertj-core") {
-                useVersion("3.+")
-            }
-        }
-    }
+    options.encoding = "UTF-8"
 }
 
 val testGradle4 = tasks.register<Test>("testGradle4") {

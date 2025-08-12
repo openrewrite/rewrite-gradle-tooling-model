@@ -34,7 +34,6 @@ import java.util.List;
 public class OpenRewriteModelBuilder {
 
     /**
-     * <b></b>Warning: This API is likely to change over time without notice</b>
      * Build an OpenRewriteModel for a project directory, using the default Gradle init script bundled within this jar.
      * The included init script accesses public artifact repositories (Maven Central, Nexus Snapshots) to be able to
      * download rewrite dependencies, so public repositories must be accessible for this to work.
@@ -44,7 +43,6 @@ public class OpenRewriteModelBuilder {
     }
 
     /**
-     * <b></b>Warning: This API is likely to change over time without notice</b>
      * Build an OpenRewriteModel for a project directory, using the init script contents passed to this function.
      * When Maven Central / Nexus Snapshots are inaccessible this overload can be used with an alternate Groovy init script
      * which applies the ToolingApiOpenRewriteModelPlugin to all projects.
