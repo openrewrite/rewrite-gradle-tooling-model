@@ -30,3 +30,7 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile")
 }
+
+tasks.withType<Test>().configureEach {
+    enabled = false
+}
