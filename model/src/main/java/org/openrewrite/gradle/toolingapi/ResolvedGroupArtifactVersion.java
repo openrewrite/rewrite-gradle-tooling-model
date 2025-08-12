@@ -16,25 +16,18 @@
 package org.openrewrite.gradle.toolingapi;
 
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.gradle.marker.GradleProject;
-import org.openrewrite.gradle.marker.GradleSettings;
 
-import java.io.Serializable;
+public interface ResolvedGroupArtifactVersion {
+    String getGroupId();
 
-public class OpenRewriteModelImpl implements Serializable {
-    private final GradleProject gradleProject;
-    private final GradleSettings gradleSettings;
+    String getArtifactId();
 
-    public OpenRewriteModelImpl(GradleProject gradleProject, @Nullable GradleSettings gradleSettings) {
-        this.gradleProject = gradleProject;
-        this.gradleSettings = gradleSettings;
-    }
+    String getVersion();
 
-    public GradleProject gradleProject() {
-        return gradleProject;
-    }
-
-    public @Nullable GradleSettings gradleSettings() {
-        return gradleSettings;
-    }
+    /**
+     * In the form "${version}-${timestamp}-${buildNumber}", e.g. for the artifact rewrite-testing-frameworks-1.7.0-20210614.172805-1.jar,
+     * the dated snapshot version is "1.7.0-20210614.172805-1".
+     */
+    @Nullable
+    String getDatedSnapshotVersion();
 }

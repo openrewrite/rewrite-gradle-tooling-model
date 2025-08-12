@@ -15,14 +15,12 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.invocation.DefaultGradle;
 import org.gradle.tooling.provider.model.ToolingModelBuilder;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
-import org.openrewrite.RecipeSerializer;
 import org.openrewrite.gradle.marker.GradleProjectBuilder;
 import org.openrewrite.gradle.marker.GradleSettings;
 import org.openrewrite.gradle.marker.GradleSettingsBuilder;
@@ -30,7 +28,6 @@ import org.openrewrite.gradle.marker.GradleSettingsBuilder;
 import javax.inject.Inject;
 import java.io.File;
 
-@SuppressWarnings("unused")
 public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
     private final ToolingModelBuilderRegistry registry;
 
@@ -45,30 +42,22 @@ public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
     }
 
     private static class OpenRewriteModelBuilder implements ToolingModelBuilder {
-        private static final ObjectMapper mapper = new RecipeSerializer().getMapper();
 
         @Override
         public boolean canBuild(String modelName) {
-            return modelName.equals(OpenRewriteModelProxy.class.getName());
+            return modelName.equals(OpenRewriteModel.class.getName());
         }
 
         @Override
         public Object buildAll(String modelName, Project project) {
-            try {
-                org.openrewrite.gradle.marker.GradleProject gradleProject = GradleProjectBuilder.gradleProject(project);
-                byte[] gradleProjectBytes = mapper.writeValueAsBytes(gradleProject);
-
-                byte[] gradleSettingsBytes = null;
-                if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0 &&
-                    (new File(project.getProjectDir(), "settings.gradle").exists() ||
-                     new File(project.getProjectDir(), "settings.gradle.kts").exists())) {
-                    GradleSettings gradleSettings = GradleSettingsBuilder.gradleSettings(((DefaultGradle) project.getGradle()).getSettings());
-                    gradleSettingsBytes = mapper.writeValueAsBytes(gradleSettings);
-                }
-                return new OpenRewriteModelImpl(gradleProjectBytes, gradleSettingsBytes);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize Gradle model to JSON", e);
+            org.openrewrite.gradle.marker.GradleProject gradleProject = GradleProjectBuilder.gradleProject(project);
+            GradleSettings gradleSettings = null;
+            if (GradleVersion.current().compareTo(GradleVersion.version("4.4")) >= 0 &&
+                (new File(project.getProjectDir(), "settings.gradle").exists() ||
+                 new File(project.getProjectDir(), "settings.gradle.kts").exists())) {
+                gradleSettings = GradleSettingsBuilder.gradleSettings(((DefaultGradle) project.getGradle()).getSettings());
             }
+            return new OpenRewriteModelImpl(gradleProject, gradleSettings);
         }
     }
 }

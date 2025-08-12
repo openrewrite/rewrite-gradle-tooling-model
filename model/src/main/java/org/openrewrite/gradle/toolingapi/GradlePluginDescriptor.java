@@ -15,12 +15,12 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import org.jspecify.annotations.Nullable;
+public interface GradlePluginDescriptor {
+    String getFullyQualifiedClassName();
 
-public interface OpenRewriteModel {
+    String getId();
 
-    GradleProject gradleProject();
-
-    @Nullable
-    GradleSettings gradleSettings();
+    static org.openrewrite.gradle.marker.GradlePluginDescriptor toMarker(GradlePluginDescriptor desc) {
+        return new org.openrewrite.gradle.marker.GradlePluginDescriptor(desc.getFullyQualifiedClassName(), desc.getId());
+    }
 }

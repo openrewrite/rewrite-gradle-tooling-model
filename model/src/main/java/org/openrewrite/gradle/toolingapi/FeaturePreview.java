@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2023 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,19 @@ package org.openrewrite.gradle.toolingapi;
 
 import org.jspecify.annotations.Nullable;
 
-public interface OpenRewriteModel {
+public interface FeaturePreview {
+    String getName();
 
-    GradleProject gradleProject();
+    boolean isActive();
 
     @Nullable
-    GradleSettings gradleSettings();
+    Boolean getEnabled();
+
+    static org.openrewrite.gradle.marker.FeaturePreview toMarker(FeaturePreview toolingFeaturePreview) {
+        return new org.openrewrite.gradle.marker.FeaturePreview(
+                toolingFeaturePreview.getName(),
+                toolingFeaturePreview.isActive(),
+                toolingFeaturePreview.getEnabled()
+        );
+    }
 }

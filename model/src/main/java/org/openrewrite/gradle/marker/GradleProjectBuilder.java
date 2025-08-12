@@ -17,12 +17,8 @@ package org.openrewrite.gradle.marker;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.*;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.attributes.Attribute;
-import org.gradle.api.attributes.HasAttributes;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.plugins.PluginManagerInternal;
 import org.gradle.api.plugins.PluginManager;
@@ -30,7 +26,10 @@ import org.gradle.invocation.DefaultGradle;
 import org.gradle.plugin.use.PluginId;
 import org.gradle.util.GradleVersion;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.maven.tree.*;
+import org.openrewrite.maven.tree.GroupArtifact;
+import org.openrewrite.maven.tree.GroupArtifactVersion;
+import org.openrewrite.maven.tree.MavenRepository;
+import org.openrewrite.maven.tree.ResolvedGroupArtifactVersion;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -39,7 +38,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.gradle.marker.GradleSettingsBuilder.GRADLE_PLUGIN_PORTAL;
@@ -212,11 +210,11 @@ public final class GradleProjectBuilder {
                     resolved = emptyList();
                 }
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), requested, resolved, exceptionType, exceptionMessage, constraints(conf.getDependencyConstraints()), attributes(conf));
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), requested, resolved, exceptionType, exceptionMessage);
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage(), constraints(conf.getDependencyConstraints()), attributes(conf));
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage());
                 results.put(conf.getName(), dc);
             }
         }
@@ -237,53 +235,19 @@ public final class GradleProjectBuilder {
         return results;
     }
 
-    private static List<org.openrewrite.gradle.marker.GradleDependencyConstraint> constraints(@Nullable DependencyConstraintSet constraints) {
-        if(constraints == null || constraints.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return constraints.stream()
-                .map(constraint -> new GradleDependencyConstraint(
-                        constraint.getGroup(),
-                        constraint.getName(),
-                        constraint.getVersionConstraint().getRequiredVersion(),
-                        constraint.getVersionConstraint().getPreferredVersion(),
-                        constraint.getVersionConstraint().getStrictVersion(),
-                        constraint.getVersionConstraint().getBranch(),
-                        constraint.getReason(),
-                        constraint.getVersionConstraint().getRejectedVersions()))
-                .collect(toList());
-    }
-
     private static final Map<GroupArtifactVersion, org.openrewrite.maven.tree.Dependency>
             requestedCache = new ConcurrentHashMap<>();
 
     private static org.openrewrite.maven.tree.Dependency dependency(Dependency dep, Configuration configuration) {
         GroupArtifactVersion gav = groupArtifactVersion(dep);
-        return requestedCache.computeIfAbsent(gav, it -> org.openrewrite.maven.tree.Dependency.builder()
-                .gav(gav)
-                .type("jar")
-                .scope(configuration.getName())
-                .exclusions(emptyList())
-                .attributes(attributes(dep))
-                .build()
+        return requestedCache.computeIfAbsent(gav, it ->
+                org.openrewrite.maven.tree.Dependency.builder()
+                        .gav(gav)
+                        .type("jar")
+                        .scope(configuration.getName())
+                        .exclusions(emptyList())
+                        .build()
         );
-    }
-
-    private static Map<String, String> attributes(Object maybeAttributed) {
-        if (!(maybeAttributed instanceof HasAttributes)) {
-            return emptyMap();
-        }
-        Map<String, String> result = new HashMap<>();
-        HasAttributes attributed = (HasAttributes) maybeAttributed;
-        for (Attribute<?> attribute : attributed.getAttributes().keySet()) {
-            Object attr = attributed.getAttributes().getAttribute(attribute);
-            result.put(attribute.getName(), String.valueOf(attr));
-        }
-        if (maybeAttributed instanceof ProjectDependency) {
-            result.put("org.gradle.api.artifacts.ProjectDependency", ((ProjectDependency) maybeAttributed).getPath());
-        }
-        return result;
     }
 
     private static List<org.openrewrite.maven.tree.ResolvedDependency> resolved(

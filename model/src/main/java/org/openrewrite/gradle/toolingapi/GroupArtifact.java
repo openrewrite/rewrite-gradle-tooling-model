@@ -15,12 +15,8 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
-import org.jspecify.annotations.Nullable;
+public interface GroupArtifact {
+    String getGroupId();
 
-public interface OpenRewriteModel {
-
-    GradleProject gradleProject();
-
-    @Nullable
-    GradleSettings gradleSettings();
+    String getArtifactId();
 }
