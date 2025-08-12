@@ -15,12 +15,65 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.RecipeSerializer;
+import org.openrewrite.gradle.marker.GradleDependencyConfiguration;
+import org.openrewrite.gradle.marker.GradleProject;
+import org.openrewrite.gradle.marker.GradleSettings;
+import org.openrewrite.internal.ListUtils;
 
-public interface OpenRewriteModel {
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-    GradleProject gradleProject();
+@Value
+public class OpenRewriteModel {
 
-    @Nullable
-    GradleSettings gradleSettings();
+    private static final ObjectMapper mapper = new RecipeSerializer().getMapper();
+
+    GradleProject gradleProject;
+
+
+    org.openrewrite.gradle.marker. @Nullable GradleSettings gradleSettings;
+
+    public static OpenRewriteModel from(OpenRewriteModelProxy proxy) {
+        try {
+            GradleProject project = mapper.readValue(proxy.getGradleProjectBytes(), GradleProject.class);
+            GradleSettings settings = proxy.getGradleSettingsBytes() == null ? null : mapper.readValue(proxy.getGradleSettingsBytes(), GradleSettings.class);
+            deduplicate(project, settings);
+            return new OpenRewriteModel(project, settings);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Depending on ObjectMapper settings there may be multiple different objects representing the same information.
+     */
+    private static void deduplicate(GradleProject gp, @Nullable GradleSettings gs) {
+        Map<String, GradleDependencyConfiguration> configurationCache = new HashMap<>();
+        deduplicateConfigurations(gp.getConfigurations(), configurationCache);
+        deduplicateConfigurations(gp.getBuildscript().getConfigurations(), configurationCache);
+    }
+
+
+    private static void deduplicateConfigurations(List<GradleDependencyConfiguration> configurations, Map<String, GradleDependencyConfiguration> cache) {
+        for (GradleDependencyConfiguration conf : configurations) {
+            cache.putIfAbsent(conf.getName(), conf);
+        }
+        for (GradleDependencyConfiguration conf : configurations) {
+            List<GradleDependencyConfiguration> deduplicatedExtendsFrom = ListUtils.map(conf.getExtendsFrom(), it -> {
+                assert it != null;
+                return cache.getOrDefault(it.getName(), it);
+            });
+            conf.unsafeSetExtendsFrom(deduplicatedExtendsFrom);
+        }
+    }
 }

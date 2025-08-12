@@ -152,18 +152,17 @@ public class Assertions {
                         SourceFile sourceFile = sourceFiles.get(i);
                         if (sourceFile.getSourcePath().endsWith("settings.gradle") || sourceFile.getSourcePath().endsWith("settings.gradle.kts")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(tempDirectory.resolve(sourceFile.getSourcePath()).getParent().toFile(), null, initScriptContents);
-                            org.openrewrite.gradle.toolingapi.GradleSettings rawSettings = model.gradleSettings();
-                            if (rawSettings != null) {
-                                GradleSettings gradleSettings = org.openrewrite.gradle.toolingapi.GradleSettings.toMarker(rawSettings);
+                            GradleSettings gradleSettings = model.getGradleSettings();
+                            if(gradleSettings != null) {
                                 sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().setByType(gradleSettings)));
                             }
                         } else if (sourceFile.getSourcePath().endsWith("build.gradle") || sourceFile.getSourcePath().endsWith("build.gradle.kts")) {
                             OpenRewriteModel model = OpenRewriteModelBuilder.forProjectDirectory(projectDir.toFile(), tempDirectory.resolve(sourceFile.getSourcePath()).toFile(), initScriptContents);
-                            GradleProject gradleProject = org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject());
+                            GradleProject gradleProject = model.getGradleProject();
                             allRepositories.addAll(gradleProject.getMavenRepositories());
                             allBuildscriptRepositories.addAll(gradleProject.getBuildscript().getMavenRepositories());
                             sourceFiles.set(i, sourceFile.withMarkers(sourceFile.getMarkers().setByType(gradleProject)));
-                            gradleProjects.put(getDirectory(sourceFile), org.openrewrite.gradle.toolingapi.GradleProject.toMarker(model.gradleProject()));
+                            gradleProjects.put(getDirectory(sourceFile), model.getGradleProject());
                         } else if (sourceFile.getSourcePath().toString().endsWith(".gradle") || sourceFile.getSourcePath().toString().endsWith(".gradle.kts")) {
                             freestandingScriptFound = true;
                         }
