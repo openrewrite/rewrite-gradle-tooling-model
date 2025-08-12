@@ -32,5 +32,5 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    enabled = false
+    dependsOn(tasks.named("publishToMavenLocal"))
 }
