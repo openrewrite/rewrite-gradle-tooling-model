@@ -77,7 +77,9 @@ public class OpenRewriteModelBuilder {
      */
     public static OpenRewriteModel forProjectDirectory(File projectDir, @Nullable File buildFile, @Nullable String initScript) throws IOException {
         DefaultGradleConnector connector = (DefaultGradleConnector) GradleConnector.newConnector();
-        if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
+        if (System.getProperty("org.openrewrite.test.gradleVersion") != null) {
+            connector.useGradleVersion(System.getProperty("org.openrewrite.test.gradleVersion"));
+        } else if (Files.exists(projectDir.toPath().resolve("gradle/wrapper/gradle-wrapper.properties"))) {
             connector.useBuildDistribution();
         } else {
             connector.useGradleVersion("8.12");
@@ -85,7 +87,7 @@ public class OpenRewriteModelBuilder {
         connector
                 // Uncomment to hit breakpoints inside OpenRewriteModelBuilder in unit tests
                 // Leave commented out in production because it is an internal/undocumented Gradle API
-                //.embedded(true)
+                .embedded(true)
                 .forProjectDirectory(projectDir);
         List<String> arguments = new ArrayList<>();
         if (buildFile != null && buildFile.exists()) {
@@ -96,7 +98,7 @@ public class OpenRewriteModelBuilder {
         Path init = projectDir.toPath().resolve("openrewrite-tooling.gradle").toAbsolutePath();
         arguments.add(init.toString());
         try (ProjectConnection connection = connector.connect()) {
-            ModelBuilder<OpenRewriteModel> customModelBuilder = connection.model(OpenRewriteModel.class);
+            ModelBuilder<OpenRewriteModelProxy> customModelBuilder = connection.model(OpenRewriteModelProxy.class);
             try {
                 if (initScript == null) {
                     try (InputStream is = OpenRewriteModel.class.getResourceAsStream("/init.gradle")) {
@@ -109,7 +111,7 @@ public class OpenRewriteModelBuilder {
                     Files.write(init, initScript.getBytes());
                 }
                 customModelBuilder.withArguments(arguments);
-                return customModelBuilder.get();
+                return OpenRewriteModel.from(customModelBuilder.get());
             } finally {
                 try {
                     Files.delete(init);
