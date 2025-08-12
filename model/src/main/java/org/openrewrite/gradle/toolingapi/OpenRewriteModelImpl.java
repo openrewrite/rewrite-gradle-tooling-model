@@ -15,26 +15,14 @@
  */
 package org.openrewrite.gradle.toolingapi;
 
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.gradle.marker.GradleProject;
-import org.openrewrite.gradle.marker.GradleSettings;
 
 import java.io.Serializable;
 
+@Value
 public class OpenRewriteModelImpl implements Serializable {
-    private final GradleProject gradleProject;
-    private final GradleSettings gradleSettings;
+    byte[] gradleProjectBytes;
 
-    public OpenRewriteModelImpl(GradleProject gradleProject, @Nullable GradleSettings gradleSettings) {
-        this.gradleProject = gradleProject;
-        this.gradleSettings = gradleSettings;
-    }
-
-    public GradleProject gradleProject() {
-        return gradleProject;
-    }
-
-    public @Nullable GradleSettings gradleSettings() {
-        return gradleSettings;
-    }
+    byte @Nullable [] gradleSettingsBytes;
 }

@@ -16,6 +16,7 @@
 package org.openrewrite.gradle.toolingapi;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.openrewrite.gradle.marker.GradleProject;
 import org.openrewrite.gradle.util.GradleWrapper;
 import org.openrewrite.test.RewriteTest;
@@ -28,6 +29,7 @@ import static org.openrewrite.gradle.Assertions.buildGradle;
 import static org.openrewrite.gradle.Assertions.settingsGradle;
 import static org.openrewrite.test.SourceSpecs.text;
 
+@DisabledIf("org.openrewrite.gradle.marker.GradleProjectTest#gradleOlderThan8")
 class AssertionsTest implements RewriteTest {
 
     @Test

@@ -1,5 +1,19 @@
 plugins {
-    id("org.openrewrite.build.language-library")
+    id("java-library")
+    id("org.openrewrite.build.metadata")
+    id("org.openrewrite.build.publish")
+    id("org.openrewrite.build.java8-text-blocks")
+}
+
+// It is intentional that these are declared explicitly
+// org.openrewrite.gradle.RewriteDependencyRepositoriesPlugin in rewrite-build-gradle-plugin disallows snapshot repositories during release builds
+// Uniquely amongst our repositories, this repository is supposed to be able to release built against rewrite-core snapshots
+repositories {
+    mavenLocal()
+    maven {
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+    }
+    mavenCentral()
 }
 
 dependencies {
@@ -19,6 +33,10 @@ dependencies {
     compileOnly("org.openrewrite:rewrite-properties:latest.integration")
     compileOnly("org.openrewrite:rewrite-toml:latest.integration")
 
+    compileOnly("org.projectlombok:lombok:latest.release")
+    testCompileOnly("org.projectlombok:lombok:latest.release")
+    annotationProcessor("org.projectlombok:lombok:latest.release")
+    testAnnotationProcessor("org.projectlombok:lombok:latest.release")
     testImplementation("org.openrewrite:rewrite-test:latest.integration")
     testImplementation("org.openrewrite:rewrite-gradle:latest.integration") {
         exclude(group = "org.openrewrite.gradle.tooling")
@@ -29,4 +47,33 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-core")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile")
+    // last version which supports java 8, which testGradle4 runs on
+    testImplementation("org.assertj:assertj-core:3.+")
+    testImplementation(platform("org.junit:junit-bom:5.13.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+}
+
+tasks.named<JavaCompile>("compileJava").configure {
+    options.release.set(8)
+    options.compilerArgs.add("-parameters")
+    options.encoding = "UTF-8"
+}
+
+val testGradle4 = tasks.register<Test>("testGradle4") {
+    systemProperty("org.openrewrite.test.gradleVersion", "4.10")
+    systemProperty("jarLocationForTest", tasks.named<Jar>("jar").get().archiveFile.get().asFile.absolutePath)
+    // Gradle 4 predates support for Java 11
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    })
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
+
+tasks.named("check").configure {
+    dependsOn(testGradle4)
 }
