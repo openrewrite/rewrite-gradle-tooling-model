@@ -43,6 +43,12 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * These tests work better in the IDE when you have it delegate execution to gradle.
+ * Allows you to hit breakpoints in code being executed within the gradle process.
+ * If you get unexpected behavior note where src/main/resources/init.gradle sources dependencies from, you may need to
+ * manually publish everything to maven local first
+ */
 class GradleProjectTest {
     public static GradleVersion gradleVersion = System.getProperty("org.openrewrite.test.gradleVersion") == null ?
       GradleVersion.current() :
@@ -146,6 +152,15 @@ class GradleProjectTest {
               mavenCentral()
           }
 
+          configurations.all {
+              resolutionStrategy.eachDependency { details ->
+                  if (details.requested.group == 'com.fasterxml.jackson.core' && details.requested.name == 'jackson-databind') {
+                      details.useVersion('2.18.3')
+                      details.because('CVE-2025-BAD')
+                  }
+              }
+          }
+
           dependencies{
               constraints {
                   implementation('com.fasterxml.jackson.core:jackson-core:2.18.4') {
@@ -155,6 +170,7 @@ class GradleProjectTest {
 
               implementation platform('org.openrewrite:rewrite-bom:8.56.0')
               implementation 'org.openrewrite:rewrite-java'
+              implementation 'org.openrewrite.recipe:rewrite-java-dependencies:1.35.+'
           }
           """;
 
@@ -177,12 +193,29 @@ class GradleProjectTest {
             gradleProject = model.getGradleProject();
         }
 
+        @Test
+        void resolutionStrategy() {
+            GradleDependencyConfiguration runtimeClasspath = requireNonNull(gradleProject.getConfiguration("runtimeClasspath"));
+            assertThat(runtimeClasspath.getAllConstraints())
+              .anyMatch(it -> "jackson-databind".equals(it.getArtifactId()) && "2.18.3".equals(it.getStrictVersion()));
+            assertThat(runtimeClasspath.getResolved())
+              .anyMatch(it -> "jackson-databind".equals(it.getArtifactId()) && "2.18.3".equals(it.getVersion()));
+        }
 
         @Test
         void sameConfigurationIsReferentiallySame() {
             GradleDependencyConfiguration implementation = requireNonNull(gradleProject.getConfiguration("implementation"));
             GradleDependencyConfiguration runtimeClasspath = requireNonNull(gradleProject.getConfiguration("runtimeClasspath"));
             assertThat(runtimeClasspath.getExtendsFrom()).anyMatch(it -> it == implementation);
+        }
+
+        @Test
+        void plusDependency() {
+            GradleDependencyConfiguration runtimeClasspath = requireNonNull(gradleProject.getConfiguration("runtimeClasspath"));
+            assertThat(runtimeClasspath.getRequested())
+              .anyMatch(it -> "rewrite-java-dependencies".equals(it.getArtifactId()) && "1.35.+".equals(it.getVersion()));
+            assertThat(runtimeClasspath.getDirectResolved())
+              .anyMatch(it -> "rewrite-java-dependencies".equals(it.getArtifactId()) && "1.35.2".equals(it.getVersion()));
         }
 
         @Test
@@ -199,9 +232,9 @@ class GradleProjectTest {
         @Test
         void requestedCorrespondsDirectlyToResolved() {
             assertThat(requireNonNull(gradleProject.getConfiguration("compileClasspath")).getRequested())
-              .hasSize(2);
+              .hasSize(3);
             assertThat(requireNonNull(gradleProject.getConfiguration("compileClasspath")).getDirectResolved())
-              .hasSize(2);
+              .hasSize(3);
         }
 
         @Test
@@ -219,17 +252,10 @@ class GradleProjectTest {
             GradleDependencyConfiguration runtimeClasspath = requireNonNull(gradleProject.getConfiguration("runtimeClasspath"));
 
             assertThat(runtimeClasspath)
-              .extracting(GradleDependencyConfiguration::getConstraints)
-              .asInstanceOf(InstanceOfAssertFactories.list(GradleDependencyConstraint.class))
-              .as("runtime classpath has no direct constraints, only inherited constraints")
-              .isEmpty();
-
-            assertThat(runtimeClasspath)
               .extracting(GradleDependencyConfiguration::getAllConstraints)
               .asInstanceOf(InstanceOfAssertFactories.list(GradleDependencyConstraint.class))
-              .singleElement()
               .as("runtime classpath should have inherited the implementation constraint on jackson-core:2.18.4")
-              .matches(constraint -> "com.fasterxml.jackson.core".equals(constraint.getGroupId()) && "jackson-core".equals(constraint.getArtifactId()) && "2.18.4".equals(constraint.getRequiredVersion()));
+              .anyMatch(constraint -> "com.fasterxml.jackson.core".equals(constraint.getGroupId()) && "jackson-core".equals(constraint.getArtifactId()) && "2.18.4".equals(constraint.getRequiredVersion()));
 
             assertThat(runtimeClasspath)
               .extracting(GradleDependencyConfiguration::getResolved)
