@@ -5,6 +5,12 @@ plugins {
     id("org.openrewrite.build.java8-text-blocks")
 }
 
+// This project's tests to work correctly a corresponding version of :plugin must be published to maven local
+// This is because src/main/resources/init.gradle expects the plugin to be present there
+// And a cross-project task dependency won't work if the projects are evaluated independently
+// This is all messy and non-idiomatic from Gradle's standpoint, so some better way would be ideal
+evaluationDependsOn(":plugin")
+
 // It is intentional that these are declared explicitly
 // org.openrewrite.gradle.RewriteDependencyRepositoriesPlugin in rewrite-build-gradle-plugin disallows snapshot repositories during release builds
 // Uniquely amongst our repositories, this repository is supposed to be able to release built against rewrite-core snapshots

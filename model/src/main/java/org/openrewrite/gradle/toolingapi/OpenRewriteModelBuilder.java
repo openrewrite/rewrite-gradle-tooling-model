@@ -85,7 +85,7 @@ public class OpenRewriteModelBuilder {
         connector
                 // Uncomment to hit breakpoints inside OpenRewriteModelBuilder in unit tests
                 // Leave commented out in production because it is an internal/undocumented Gradle API
-                .embedded(true)
+                // .embedded(true)
                 .forProjectDirectory(projectDir);
         List<String> arguments = new ArrayList<>();
         if (buildFile != null && buildFile.exists()) {
