@@ -30,6 +30,7 @@ import org.gradle.invocation.DefaultGradle;
 import org.gradle.plugin.use.PluginId;
 import org.gradle.util.GradleVersion;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.gradle.attributes.Category;
 import org.openrewrite.maven.tree.*;
 
 import java.lang.reflect.InvocationTargetException;
@@ -260,13 +261,24 @@ public final class GradleProjectBuilder {
 
     private static org.openrewrite.maven.tree.Dependency dependency(Dependency dep, Configuration configuration) {
         GroupArtifactVersion gav = groupArtifactVersion(dep);
-        return requestedCache.computeIfAbsent(gav, it -> org.openrewrite.maven.tree.Dependency.builder()
-                .gav(gav)
-                .type("jar")
-                .scope(configuration.getName())
-                .exclusions(emptyList())
-                .attributes(attributes(dep))
-                .build()
+        return requestedCache.computeIfAbsent(gav, it -> {
+            Map<String, String> attributes = attributes(dep);
+
+            String type = "jar";
+            if(Optional.ofNullable(Category.from(attributes.get(Category.key())))
+                    .filter(cat -> cat == Category.REGULAR_PLATFORM || cat == Category.ENFORCED_PLATFORM)
+                    .isPresent()) {
+                type = "pom";
+            }
+
+            return org.openrewrite.maven.tree.Dependency.builder()
+                            .gav(gav)
+                            .type(type)
+                            .scope(configuration.getName())
+                            .exclusions(emptyList())
+                            .attributes(attributes)
+                            .build();
+                }
         );
     }
 
@@ -300,16 +312,17 @@ public final class GradleProjectBuilder {
                     ResolvedGroupArtifactVersion resolvedGav = resolvedGroupArtifactVersion(resolved);
                     org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
                     if (resolvedDependency == null) {
+                        org.openrewrite.maven.tree.Dependency requested = gaToRequested.getOrDefault(ga, dependency(resolved));
                         resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
                                 .gav(resolvedGav)
                                 // There may not be a requested entry if a dependency substitution rule took effect
                                 // the DependencyHandler has the substitution mapping buried inside it, but not exposed publicly
-                                // Possible improvement to dig that out and use it
-                                .requested(gaToRequested.getOrDefault(ga, dependency(resolved)))
+                                .requested(requested)
                                 .dependencies(resolved.getChildren().stream()
                                         .map(child -> resolved(child, 1, resolvedCache))
                                         .collect(toList()))
                                 .licenses(emptyList())
+                                .type(requested.getType())
                                 .depth(0)
                                 .build();
                         resolvedCache.put(resolvedGav, resolvedDependency);
@@ -327,14 +340,25 @@ public final class GradleProjectBuilder {
      */
     private static org.openrewrite.maven.tree.Dependency dependency(ResolvedDependency dep) {
         GroupArtifactVersion gav = groupArtifactVersion(dep);
-        return requestedCache.computeIfAbsent(gav, it ->
-                org.openrewrite.maven.tree.Dependency.builder()
-                        .gav(gav)
-                        .type("jar")
-                        .scope(dep.getConfiguration())
-                        .exclusions(emptyList())
-                        .build()
-        );
+        return requestedCache.computeIfAbsent(gav, it -> {
+            // Synthesize a Category attribute if this is a BOM
+            String type = "jar";
+            Map<String, String> attributes = Collections.emptyMap();
+            // Both enforcedPlatform() and platform() appear the same in this context, so assume platform()
+            if (dep.getConfiguration().startsWith("platform-")) {
+                attributes = Collections.singletonMap(Category.key(), "platform");
+                type = "pom";
+            }
+
+            return org.openrewrite.maven.tree.Dependency.builder()
+                    .gav(gav)
+                    // platform() dependencies are effectively BOMs, so their jar isn't actually used
+                    .type(type)
+                    .attributes(attributes)
+                    .scope(dep.getConfiguration())
+                    .exclusions(emptyList())
+                    .build();
+        });
     }
 
     private static org.openrewrite.maven.tree.ResolvedDependency resolved(
@@ -345,12 +369,15 @@ public final class GradleProjectBuilder {
         org.openrewrite.maven.tree.ResolvedDependency resolvedDependency = resolvedCache.get(resolvedGav);
         if (resolvedDependency == null) {
             List<org.openrewrite.maven.tree.ResolvedDependency> dependencies = new ArrayList<>();
+            org.openrewrite.maven.tree.Dependency requested = dependency(dep);
             resolvedDependency = org.openrewrite.maven.tree.ResolvedDependency.builder()
                     .gav(resolvedGav)
-                    .requested(dependency(dep))
+                    .requested(requested)
                     .dependencies(dependencies)
                     .licenses(emptyList())
-                    .depth(depth).build();
+                    .type(requested.getType())
+                    .depth(depth)
+                    .build();
             //we add a temporal resolved dependency in the cache to avoid stackoverflow with dependencies that have cycles
             resolvedCache.put(resolvedGav, resolvedDependency);
             dep.getChildren().forEach(child -> dependencies.add(resolved(child, depth + 1, resolvedCache)));

@@ -44,10 +44,8 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * These tests work better in the IDE when you have it delegate execution to gradle.
- * Allows you to hit breakpoints in code being executed within the gradle process.
- * If you get unexpected behavior note where src/main/resources/init.gradle sources dependencies from, you may need to
- * manually publish everything to maven local first
+ * When running these in an IDE you should enable delegation to Gradle for best results.
+ * Also uncomment embedded(true) in OpenRewriteModelBuilder and you should be able to hit breakpoints.
  */
 class GradleProjectTest {
     public static GradleVersion gradleVersion = System.getProperty("org.openrewrite.test.gradleVersion") == null ?
@@ -268,8 +266,18 @@ class GradleProjectTest {
         void bom() {
             GradleDependencyConfiguration runtimeClasspath = requireNonNull(gradleProject.getConfiguration("runtimeClasspath"));
             assertThat(runtimeClasspath.getRequested())
-              .as("rewrite-bom should be marked as ")
-              .anyMatch(it -> it.findAttribute(Category.class).isPresent() && "rewrite-bom".equals(it.getArtifactId()));
+              .as("rewrite-bom should be marked as a platform() dependency")
+              .anyMatch(it -> it.findAttribute(Category.class)
+                                .filter(Category.REGULAR_PLATFORM::equals)
+                                .isPresent()
+                              && "rewrite-bom".equals(it.getArtifactId())
+                              && "pom".equals(it.getType()));
+            assertThat(runtimeClasspath.getDirectResolved())
+              .filteredOn(it -> "rewrite-bom".equals(it.getArtifactId()))
+              .singleElement()
+              .extracting(ResolvedDependency::getType)
+              .as("platform() dependencies should have type \"pom\" to help indicate that they aren't jars going onto a classpath")
+              .isEqualTo("pom");
         }
     }
 
