@@ -244,21 +244,30 @@ public final class GradleProjectBuilder {
         // Model them as synthetic constraints so we have knowledge of them for later GradleProject updates
         Set<GradleDependencyConstraint> inferredConstraints = new HashSet<>();
         if (conf.isCanBeResolved()) {
-            // If conf has already been resolved it is an error to attach a new resolutionStrategy to it
-            // So create a new configuration which can inherit everything we're interested in and resolve that
-            Configuration inheritor = configurations.create(conf.getName() + "inheritor");
-            inheritor.extendsFrom(conf);
-            inheritor.getResolutionStrategy().eachDependency(details -> {
-                ModuleVersionSelector target = details.getTarget();
-                if (!details.getRequested().equals(target)) {
-                    inferredConstraints.add(GradleDependencyConstraint.builder()
-                            .groupId(target.getGroup())
-                            .artifactId(target.getName())
-                            .strictVersion(target.getVersion())
-                            .build());
+            try {
+                // If conf has already been resolved it is an error to attach a new resolutionStrategy to it
+                // So create a new configuration which can inherit everything we're interested in and resolve that
+                String name = conf.getName() + "Inheritor";
+                if (configurations.findByName(name) != null) {
+                    // I'd rather use an anonymous, detached configuration but those are deprecated and don't extendFrom() correctly
+                    name = name + new Random().nextInt();
                 }
-            });
-            inheritor.resolve();
+                Configuration inheritor = configurations.create(name);
+                inheritor.extendsFrom(conf);
+                inheritor.getResolutionStrategy().eachDependency(details -> {
+                    ModuleVersionSelector target = details.getTarget();
+                    if (!details.getRequested().equals(target)) {
+                        inferredConstraints.add(GradleDependencyConstraint.builder()
+                                .groupId(target.getGroup())
+                                .artifactId(target.getName())
+                                .strictVersion(target.getVersion())
+                                .build());
+                    }
+                });
+                inheritor.resolve();
+            } catch (Exception e) {
+                // this is more of a nice-to-have than an essential
+            }
         }
         Set<GradleDependencyConstraint> configuredConstraints = conf.getDependencyConstraints().stream()
                 .map(constraint -> new GradleDependencyConstraint(
