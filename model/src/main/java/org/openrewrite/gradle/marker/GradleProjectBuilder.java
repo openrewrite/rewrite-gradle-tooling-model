@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.gradle.marker.GradleSettingsBuilder.GRADLE_PLUGIN_PORTAL;
 
@@ -67,6 +68,18 @@ public final class GradleProjectBuilder {
         if (pluginRepositories.isEmpty()) {
             pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
         }
+        Map<String, Set<GradleDependencyConstraint>> confToInferredConstraint = new ConcurrentHashMap<>();
+        project.getConfigurations().configureEach(conf -> conf.getResolutionStrategy().eachDependency(details -> {
+            ModuleVersionSelector target = details.getTarget();
+            if (!details.getRequested().equals(target)) {
+                confToInferredConstraint.computeIfAbsent(conf.getName(), (set) -> Collections.synchronizedSet(new HashSet<>()))
+                        .add(GradleDependencyConstraint.builder()
+                                .groupId(target.getGroup())
+                                .artifactId(target.getName())
+                                .strictVersion(target.getVersion())
+                                .build());
+            }
+        }));
 
         return new GradleProject(randomId(),
                 project.getGroup().toString(),
@@ -213,11 +226,11 @@ public final class GradleProjectBuilder {
                     resolved = emptyList();
                 }
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), requested, resolved, exceptionType, exceptionMessage, constraints(conf.getDependencyConstraints()), attributes(conf));
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), requested, resolved, exceptionType, exceptionMessage, constraints(configurationContainer, conf), attributes(conf));
                 results.put(conf.getName(), dc);
             } catch (Exception e) {
                 GradleDependencyConfiguration dc = new GradleDependencyConfiguration(conf.getName(), conf.getDescription(),
-                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage(), constraints(conf.getDependencyConstraints()), attributes(conf));
+                        conf.isTransitive(), conf.isCanBeResolved(), conf.isCanBeConsumed(), isCanBeDeclared(conf), emptyList(), emptyList(), emptyList(), e.getClass().getName(), e.getMessage(), constraints(configurationContainer, conf), attributes(conf));
                 results.put(conf.getName(), dc);
             }
         }
@@ -238,12 +251,28 @@ public final class GradleProjectBuilder {
         return results;
     }
 
-    private static List<org.openrewrite.gradle.marker.GradleDependencyConstraint> constraints(@Nullable DependencyConstraintSet constraints) {
-        if(constraints == null || constraints.isEmpty()) {
-            return Collections.emptyList();
+    private static List<org.openrewrite.gradle.marker.GradleDependencyConstraint> constraints(ConfigurationContainer configurations, Configuration conf) {
+        // Discover the results of other resolution strategy manipulation
+        // Model them as synthetic constraints so we have knowledge of them for later GradleProject updates
+        Set<GradleDependencyConstraint> inferredConstraints = new HashSet<>();
+        if (conf.isCanBeResolved()) {
+            // If conf has already been resolved it is an error to attach a new resolutionStrategy to it
+            // So create a new anonymous configuration which can inherit everything we're interested in and resolve that
+            Configuration detached = configurations.detachedConfiguration();
+            detached.extendsFrom(conf);
+            detached.getResolutionStrategy().eachDependency(details -> {
+                ModuleVersionSelector target = details.getTarget();
+                if (!details.getRequested().equals(target)) {
+                    inferredConstraints.add(GradleDependencyConstraint.builder()
+                            .groupId(target.getGroup())
+                            .artifactId(target.getName())
+                            .strictVersion(target.getVersion())
+                            .build());
+                }
+            });
+            detached.resolve();
         }
-
-        return constraints.stream()
+        Set<GradleDependencyConstraint> configuredConstraints = conf.getDependencyConstraints().stream()
                 .map(constraint -> new GradleDependencyConstraint(
                         constraint.getGroup(),
                         constraint.getName(),
@@ -253,7 +282,9 @@ public final class GradleProjectBuilder {
                         constraint.getVersionConstraint().getBranch(),
                         constraint.getReason(),
                         constraint.getVersionConstraint().getRejectedVersions()))
-                .collect(toList());
+                .collect(toSet());
+
+        return GradleDependencyConfiguration.merge(inferredConstraints, configuredConstraints);
     }
 
     private static final Map<GroupArtifactVersion, org.openrewrite.maven.tree.Dependency>

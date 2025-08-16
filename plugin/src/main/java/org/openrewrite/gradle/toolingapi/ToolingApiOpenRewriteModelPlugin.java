@@ -18,7 +18,6 @@ package org.openrewrite.gradle.toolingapi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.invocation.DefaultGradle;
 import org.gradle.tooling.provider.model.ToolingModelBuilder;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
@@ -28,8 +27,6 @@ import org.openrewrite.gradle.marker.*;
 
 import javax.inject.Inject;
 import java.io.File;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unused")
 public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
@@ -42,37 +39,12 @@ public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        Map<String, Set<GradleDependencyConstraint>> confToInferredConstraint = new ConcurrentHashMap<>();
-        List<String> strings = new ArrayList<>();
-        // Discover other resolution strategy changes which may exist
-        // Model them as synthetic constraints so we have knowledge of them for later GradleProject updates
-        project.afterEvaluate(unused -> project.getConfigurations().configureEach(conf -> {
-            if (conf.isCanBeResolved()) {
-                conf.getResolutionStrategy().eachDependency(details -> {
-                    ModuleVersionSelector target = details.getTarget();
-                    if (!details.getRequested().equals(target)) {
-                        confToInferredConstraint.computeIfAbsent(conf.getName(), (set) -> Collections.synchronizedSet(new HashSet<>()))
-                                .add(GradleDependencyConstraint.builder()
-                                        .groupId(target.getGroup())
-                                        .artifactId(target.getName())
-                                        .strictVersion(target.getVersion())
-                                        .build());
-                    }
-                });
-            }
-        }));
-        registry.register(new OpenRewriteModelBuilder(confToInferredConstraint));
+        registry.register(new OpenRewriteModelBuilder());
     }
 
     private static final ObjectMapper mapper = new RecipeSerializer().getMapper();
 
     private static class OpenRewriteModelBuilder implements ToolingModelBuilder {
-        Map<String, Set<GradleDependencyConstraint>> confToInferredConstraint;
-
-        public OpenRewriteModelBuilder(Map<String, Set<GradleDependencyConstraint>> confToInferredConstraint) {
-            this.confToInferredConstraint = confToInferredConstraint;
-        }
-
         @Override
         public boolean canBuild(String modelName) {
             return modelName.equals(OpenRewriteModelProxy.class.getName());
@@ -82,11 +54,6 @@ public class ToolingApiOpenRewriteModelPlugin implements Plugin<Project> {
         public Object buildAll(String modelName, Project project) {
             try {
                 org.openrewrite.gradle.marker.GradleProject gradleProject = GradleProjectBuilder.gradleProject(project);
-                if (!confToInferredConstraint.isEmpty()) {
-                    for (GradleDependencyConfiguration conf : gradleProject.getConfigurations()) {
-                        conf.unsafeSetConstraints(GradleDependencyConfiguration.merge(confToInferredConstraint.get(conf.getName()), conf.getConstraints()));
-                    }
-                }
                 byte[] gradleProjectBytes = mapper.writeValueAsBytes(gradleProject);
 
                 byte[] gradleSettingsBytes = null;
