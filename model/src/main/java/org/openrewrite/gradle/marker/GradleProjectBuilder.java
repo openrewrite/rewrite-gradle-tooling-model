@@ -245,10 +245,10 @@ public final class GradleProjectBuilder {
         Set<GradleDependencyConstraint> inferredConstraints = new HashSet<>();
         if (conf.isCanBeResolved()) {
             // If conf has already been resolved it is an error to attach a new resolutionStrategy to it
-            // So create a new anonymous configuration which can inherit everything we're interested in and resolve that
-            Configuration detached = configurations.detachedConfiguration();
-            detached.extendsFrom(conf);
-            detached.getResolutionStrategy().eachDependency(details -> {
+            // So create a new configuration which can inherit everything we're interested in and resolve that
+            Configuration inheritor = configurations.create(conf.getName() + "inheritor");
+            inheritor.extendsFrom(conf);
+            inheritor.getResolutionStrategy().eachDependency(details -> {
                 ModuleVersionSelector target = details.getTarget();
                 if (!details.getRequested().equals(target)) {
                     inferredConstraints.add(GradleDependencyConstraint.builder()
@@ -258,7 +258,7 @@ public final class GradleProjectBuilder {
                             .build());
                 }
             });
-            detached.resolve();
+            inheritor.resolve();
         }
         Set<GradleDependencyConstraint> configuredConstraints = conf.getDependencyConstraints().stream()
                 .map(constraint -> new GradleDependencyConstraint(
