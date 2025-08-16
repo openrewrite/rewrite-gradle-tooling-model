@@ -68,18 +68,6 @@ public final class GradleProjectBuilder {
         if (pluginRepositories.isEmpty()) {
             pluginRepositories.add(GRADLE_PLUGIN_PORTAL);
         }
-        Map<String, Set<GradleDependencyConstraint>> confToInferredConstraint = new ConcurrentHashMap<>();
-        project.getConfigurations().configureEach(conf -> conf.getResolutionStrategy().eachDependency(details -> {
-            ModuleVersionSelector target = details.getTarget();
-            if (!details.getRequested().equals(target)) {
-                confToInferredConstraint.computeIfAbsent(conf.getName(), (set) -> Collections.synchronizedSet(new HashSet<>()))
-                        .add(GradleDependencyConstraint.builder()
-                                .groupId(target.getGroup())
-                                .artifactId(target.getName())
-                                .strictVersion(target.getVersion())
-                                .build());
-            }
-        }));
 
         return new GradleProject(randomId(),
                 project.getGroup().toString(),
