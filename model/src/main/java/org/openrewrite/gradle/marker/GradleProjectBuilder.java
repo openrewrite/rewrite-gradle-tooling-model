@@ -321,9 +321,29 @@ public final class GradleProjectBuilder {
             result.put(attribute.getName(), String.valueOf(attr));
         }
         if (maybeAttributed instanceof ProjectDependency) {
-            result.put("org.gradle.api.artifacts.ProjectDependency", ((ProjectDependency) maybeAttributed).getPath());
+            result.put("org.gradle.api.artifacts.ProjectDependency", projectPath((ProjectDependency) maybeAttributed));
         }
         return result;
+    }
+
+    /**
+     * Reflectively retrieve the project path for compatibility with a wide range of Gradle versions.
+     */
+    private static String projectPath(ProjectDependency pd) {
+        try {
+            // ProjectDependency.getPath introduced in gradle 8.11
+            Method getPath = ProjectDependency.class.getMethod("getPath");
+            return  (String) getPath.invoke(pd);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // ProjectDependency.getDependencyProject() scheduled for removal in Gradle 9.0
+            try {
+                Method getDependencyProject = ProjectDependency.class.getMethod("getDependencyProject");
+                return ((Project)getDependencyProject.invoke(pd)).getPath();
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
+                // All supported versions of Gradle have getPath(), getDependencyProject(), or both, so this hopefully never happens
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     private static List<org.openrewrite.maven.tree.ResolvedDependency> resolved(

@@ -283,7 +283,6 @@ class GradleProjectTest {
 
     @SuppressWarnings("NotNullFieldNotInitialized")
     @Nested
-    @DisabledIf("org.openrewrite.gradle.marker.GradleProjectTest#gradleOlderThan8")
     class multiProject {
         @TempDir
         static Path dir;
@@ -303,8 +302,7 @@ class GradleProjectTest {
           }
 
           dependencies{
-              implementation platform('org.openrewrite:rewrite-bom:8.57.0')
-              implementation 'org.openrewrite:rewrite-java'
+              implementation 'org.openrewrite:rewrite-java:8.57.0'
               testImplementation("org.projectlombok:lombok:latest.release")
           }
           """;
@@ -351,7 +349,7 @@ class GradleProjectTest {
             Path bDir = dir.resolve("b");
             Files.createDirectory(bDir);
             try (InputStream is = new ByteArrayInputStream(bBuildGradle.getBytes(StandardCharsets.UTF_8))) {
-                Files.write(bDir.resolve("build.gradle"), is.readAllBytes());
+                Files.write(bDir.resolve("build.gradle"), readAllBytes(is));
             }
 
 
