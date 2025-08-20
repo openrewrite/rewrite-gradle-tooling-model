@@ -13,9 +13,15 @@ repositories {
     mavenCentral()
 }
 
+val latest = if (project.hasProperty("releasing")) {
+    "latest.release"
+} else {
+    "latest.integration"
+}
+
 dependencies {
     implementation(project(":model"))
-    implementation("org.openrewrite:rewrite-gradle:latest.integration")
+    implementation("org.openrewrite:rewrite-gradle:$latest")
     implementation(gradleApi())
 }
 
